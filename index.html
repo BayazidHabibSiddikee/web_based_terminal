@@ -1,14 +1,166 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fedora Control Plane</title>
+    <style>
+        :root {
+            --neon-blue: #00d4ff;
+            --terminal-green: #00ff41;
+            --dark-bg: #0a0b10;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            border: 2px solid var(--neon-blue);
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .status-bar {
+            background: rgba(0, 212, 255, 0.1);
+            padding: 5px 20px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-bottom: 20px;
+            border: 1px solid var(--neon-blue);
+        }
+
+        .nav-buttons {
+            margin-bottom: 30px;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin: 0 5px;
+        }
+
+        button a {
+            color: var(--neon-blue);
+            text-decoration: none;
+        }
+
+        button:hover {
+            background: var(--neon-blue);
+        }
+
+        button:hover a {
+            color: black;
+        }
+
+        .terminal-box {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border: 1px solid #333;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        input[type="text"] {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--terminal-green);
+            color: var(--terminal-green);
+            width: 70%;
+            padding: 10px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .execute-btn {
+            color: var(--terminal-green);
+            border-color: var(--terminal-green);
+        }
+
+        /* Floating Commands Animation */
+        .ticker-container {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            border-top: 1px solid #222;
+            padding-top: 10px;
+        }
+
+        .ticker-text {
+            display: inline-block;
+            padding-left: 100%;
+            animation: ticker 20s linear infinite;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.9rem;
+        }
+
+        .ticker-text span {
+            margin-right: 50px;
+            font-weight: bold;
+        }
+
+        @keyframes ticker {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            100% {
+                transform: translate(-100%, 0);
+            }
+        }
+    </style>
+</head>
 
 <body>
-    <h1>Hello from your Fedora Server!</h1>
-    <p>Fedora Linux Environment - System Active</p>
-    <button><a href="motivational_page.html">Main Page</a></button>
-    <button><a>About No file</a></button><br>
-    <form action="/run" method="GET">
-        <input type="text" name="command" placeholder="Enter command (e.g., fastfetch)">
-        <button type="submit">Execute</button>
-    </form>
+
+    <div class="status-bar">SYSTEM STATUS: ACTIVE // ENCRYPTION: AES-256</div>
+
+    <h1>FEDORA SERVER v1.0</h1>
+    <p>Target Environment: Discipline@Fedora</p>
+
+    <div class="nav-buttons">
+        <button><a href="motivational_page.html">DASHBOARD</a></button>
+        <button><a href="#">ABOUT_SYSTEM</a></button>
+    </div>
+
+    <div class="terminal-box">
+        <form action="/run" method="GET">
+            <span style="color: var(--terminal-green)">$</span>
+            <input type="text" name="command" placeholder="Enter system command..." autofocus>
+            <button type="submit" class="execute-btn">EXECUTE</button>
+        </form>
+    </div>
+
+    <div class="ticker-container">
+        <div class="ticker-text">
+            <span>> sudo dnf update</span>
+            <span>> fastfetch --logo fedora</span>
+            <span>> python3 main.py --server</span>
+            <span>> adb shell pm disable tech.palm.find</span>
+            <span>> git push origin main --force</span>
+            <span>> ls -la /var/www/html</span>
+            <span>> neofetch</span>
+        </div>
+    </div>
 
 </body>
 
