@@ -1,0 +1,12 @@
+# ── GUI ───────────────────────────────────────────────────────────────────────
+#PySide6>=6.5.0
+#pip install PySide6
+
+# ── Standard library (no install needed) ─────────────────────────────────────
+# socket, subprocess, urllib.parse, threading, sys, os, shutil, platform
+
+# ── AVR toolchain (install via OS package manager, NOT pip) ──────────────────
+# Fedora:  sudo dnf install avr-gcc avr-libc avrdude
+# Ubuntu:  sudo apt install gcc-avr avr-libc avrdude
+# Windows: scoop install avr-gcc avrdude   (or install WinAVR manually)
+# Android: pkg install avr-toolchain avrdude   (Termux)
