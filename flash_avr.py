@@ -65,7 +65,12 @@ def _resolve_paths(file_name):
     if file_name.endswith(".c"):
         file_name = file_name[:-2]
 
-    abs_path = os.path.abspath(file_name)
+    # If it's already an absolute path, use it. Otherwise, make it absolute.
+    if os.path.isabs(file_name):
+        abs_path = file_name
+    else:
+        abs_path = os.path.abspath(file_name)
+
     work_dir = os.path.dirname(abs_path)
     base     = os.path.basename(abs_path)
     return work_dir, base
