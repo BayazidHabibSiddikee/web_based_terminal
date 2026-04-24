@@ -3,106 +3,123 @@ import os
 import subprocess
 import urllib.parse
 
-# Step 1: Create socket
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# Import AVR helpers (must live in same folder as main.py)
+from flash_avr import flash_avr, generate_hex, generate_elf
 
-# Step 2: Set socket options
+# ── Socket setup ───────────────────────────────────────────────────────────────
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 port = 8090
-
-# Step 3: Bind
 server_socket.bind(("0.0.0.0", port))
-
-# Step 4: Listen
 server_socket.listen(5)
 print(f"Server started! Visit http://localhost:{port}")
 
-# Step 5: Accept and respond
+# ── Helpers ────────────────────────────────────────────────────────────────────
+def read_file(filename):
+    """Return file contents or a 404 response string."""
+    try:
+        with open(filename, "r", encoding="utf-8") as f:
+            return True, f.read()
+    except FileNotFoundError:
+        return False, f"<h1>404 – {filename} Not Found</h1>"
+
+def http_ok(body, content_type="text/html"):
+    return f"HTTP/1.1 200 OK\r\nContent-Type: {content_type}; charset=utf-8\r\n\r\n{body}"
+
+def http_404(body="Not Found"):
+    return f"HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n{body}"
+
+def http_405():
+    return "HTTP/1.1 405 Method Not Allowed\r\nAllow: GET\r\n\r\n"
+
+# ── Main loop ──────────────────────────────────────────────────────────────────
 while True:
     try:
         client_socket, client_address = server_socket.accept()
-        request = client_socket.recv(1500).decode()
+        request = client_socket.recv(4096).decode(errors="replace")
 
-        print(f"Client address {client_address}:\n{request}")
-
-        headers = request.split('\n')
-        first_header_components = headers[0].split()
-
-        # Guard against malformed/empty requests
-        if len(first_header_components) < 2:
+        if not request:
             client_socket.close()
             continue
 
-        http_method = first_header_components[0]
-        path = first_header_components[1]
+        print(f"\n[{client_address[0]}] {request.splitlines()[0]}")
 
-        if http_method == "GET":
+        parts = request.split('\n')[0].split()
+        if len(parts) < 2:
+            client_socket.close()
+            continue
 
-            # ── Route: /run?command=xxx → web terminal ──────────────────────
-            if path.startswith("/run"):
-                query = urllib.parse.urlparse(path).query
-                params = urllib.parse.parse_qs(query)
-                #print(params)
-                cmd = params.get("command", [""])[0]
+        method = parts[0]
+        path   = parts[1]
 
-                if cmd:
-                    #result = subprocess.run(f"xdg-open {cmd}")
-                    result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-                    output = result.stdout if result.stdout else result.stderr
-                else:
-                    output = "No command provided."
+        if method != "GET":
+            client_socket.sendall(http_405().encode())
+            client_socket.close()
+            continue
 
-                body = f"<h1>Command Output</h1><pre>{output}</pre>"
-                body += "<br><a href='/'>Back to Home</a>"
-                response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + body
+        # Parse query params once
+        parsed = urllib.parse.urlparse(path)
+        params = urllib.parse.parse_qs(parsed.query)
+        def p(key, default=""):
+            return params.get(key, [default])[0]
 
-            # ── Route: / or /motivational_page.html → main page ────────────
-            elif path == "/" or path == "/motivational_page.html":
-                filename = "motivational_page.html"
-                try:
-                    with open(filename, "r") as f:
-                        content = f.read()
-                    response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + content
-                except FileNotFoundError:
-                    response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n<h1>404 - File Not Found</h1>"
+        # ── /avr  →  AVR build / flash ────────────────────────────────────────
+        if parsed.path == "/avr":
+            action   = p("action", "flash")
+            filename = p("filename")
+            board    = p("board", "atmega8")
+            port_dev = p("port")          # empty = auto-detect inside flash_avr
 
-            elif path == "/index.html":
-                filename = "index.html"
-                try:
-                    with open(filename, "r") as f:
-                        content = f.read()
-                    response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + content
-                except FileNotFoundError:
-                    response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n<h1>404 - File Not Found</h1>"
+            if not filename:
+                output = "Error: No filename provided."
+                ok = False
+            elif action == "elf":
+                ok, output = generate_elf(filename, board)
+            elif action == "hex":
+                ok, output = generate_hex(filename, board)
+            else:  # flash
+                ok, output = flash_avr(filename, board, port_dev)
 
-            # ── Route: /about → system info via fastfetch ───────────────────
-            elif path == "/about":
-                r = subprocess.run(["fastfetch"], capture_output=True, text=True, shell=True)
-                body = (
-                    "<h1>About Page</h1>"
-                    "<p>Created by <a href='index.html'>Discipline@Fedora</a></p>"
-                    f"<pre>{r.stdout if r.stdout else r.stderr}</pre>"
-                )
-                response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + body
+            response = http_ok(output, "text/plain")
 
-            # ── Fallback: try serving file by name ──────────────────────────
+        # ── /run  →  Raw shell command ─────────────────────────────────────────
+        elif parsed.path == "/run":
+            cmd = p("command")
+            if cmd:
+                result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+                output = result.stdout if result.stdout else result.stderr or "(no output)"
             else:
-                filename = path.lstrip("/")
-                try:
-                    with open(filename, "r") as f:
-                        content = f.read()
-                    response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + content
-                except FileNotFoundError:
-                    response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n<h1>404 - File Not Found</h1>"
+                output = "Error: No command provided."
+            response = http_ok(output, "text/plain")
 
+        # ── / or /index.html ──────────────────────────────────────────────────
+        elif parsed.path in ("/", "/index.html"):
+            ok, content = read_file("index.html")
+            response = http_ok(content) if ok else http_404(content)
+
+        # ── /about ────────────────────────────────────────────────────────────
+        elif parsed.path == "/about":
+            r = subprocess.run(["fastfetch"], capture_output=True, text=True, shell=True)
+            body = ("<h1>About</h1>"
+                    "<p>Created by <a href='index.html'>Discipline@Fedora</a></p>"
+                    f"<pre>{r.stdout or r.stderr}</pre>")
+            response = http_ok(body)
+
+        # ── Static file fallback ───────────────────────────────────────────────
         else:
-            response = "HTTP/1.1 405 Method Not Allowed\r\nAllow: GET\r\n\r\n"
+            filename = parsed.path.lstrip("/")
+            ok, content = read_file(filename)
+            response = http_ok(content) if ok else http_404(content)
 
-        client_socket.sendall(response.encode())
+        client_socket.sendall(response.encode(errors="replace"))
         client_socket.close()
 
     except BlockingIOError:
         continue
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"[Server Error] {e}")
+        try:
+            client_socket.close()
+        except:
+            pass
