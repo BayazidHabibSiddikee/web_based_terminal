@@ -92,7 +92,6 @@
             box-shadow: none;
         }
 
-        /* Terminal output */
         #output-window {
             background: #050505;
             border-left: 3px solid var(--terminal-green);
@@ -106,20 +105,19 @@
             word-break: break-all;
         }
 
-        #output-window .line-error {
-            color: var(--error-red);
+        .line-error {
+            color: var(--error-red) !important;
         }
 
-        #output-window .line-success {
-            color: #00ff41;
+        .line-success {
+            color: #00ff41 !important;
             font-weight: bold;
         }
 
-        #output-window .line-info {
-            color: var(--neon-blue);
+        .line-info {
+            color: var(--neon-blue) !important;
         }
 
-        /* Status bar */
         #status-bar {
             display: flex;
             justify-content: space-between;
@@ -164,7 +162,6 @@
             }
         }
 
-        /* Web terminal section */
         .section-divider {
             border: none;
             border-top: 1px solid #222;
@@ -177,6 +174,31 @@
             text-transform: uppercase;
             letter-spacing: 3px;
             margin-bottom: 10px;
+        }
+
+        .error-banner {
+            background: rgba(255, 49, 49, 0.1);
+            border: 1px solid var(--error-red);
+            color: var(--error-red);
+            padding: 12px 16px;
+            margin-bottom: 15px;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .error-banner.visible {
+            display: block;
+        }
+
+        .platform-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border: 1px solid #333;
+            border-radius: 3px;
+            font-size: 0.65rem;
+            color: #555;
+            margin-left: 10px;
+            vertical-align: middle;
         }
 
         footer {
@@ -228,37 +250,44 @@
 
 <body>
 
-    <h1>AVR COMMAND CENTER</h1>
+    <h1>AVR COMMAND CENTER <span id="platform-badge" class="platform-badge"></span></h1>
 
     <div class="terminal-container">
 
-        <!-- ── AVR BUILD/FLASH FORM ───────────────────────────────────── -->
+        <div id="conn-error" class="error-banner">
+            ⚠ Cannot connect to backend server. Run:<br>
+            <span id="conn-hint" style="color:#ff8888">python terminal.py</span>
+        </div>
+
         <p class="section-label">&gt; AVR_TOOLCHAIN</p>
 
         <div class="controls-row">
             <label>TARGET_MCU:</label>
             <select id="board">
                 <option value="atmega8">ATmega8</option>
-                <option value="atmega328p">ATmega328P</option>
+                <option value="atmega16">ATmega16</option>
                 <option value="atmega32">ATmega32</option>
+                <option value="atmega328p">ATmega328P</option>
+                <option value="atmega128">ATmega128</option>
                 <option value="attiny85">ATtiny85</option>
+                <option value="attiny84">ATtiny84</option>
             </select>
         </div>
 
         <div class="controls-row">
             <label>FILE_PATH:</label>
-            <input type="text" id="filename" placeholder="Full path or name, e.g. /home/user/blink or C:\avr\blink"
+            <input type="text" id="filename" placeholder="Path without .c  e.g. /home/user/blink  or  C:\avr\blink"
                 required>
         </div>
 
         <div class="controls-row">
             <label>SERIAL_PORT:</label>
-            <input type="text" id="port" placeholder="Auto-detect (or: /dev/ttyUSB0 | COM3)">
+            <input type="text" id="port" placeholder="Auto-detect  (  /dev/ttyUSB0  |  COM3  )">
         </div>
 
         <div class="controls-row">
             <select id="action">
-                <option value="flash">BUILD & FLASH</option>
+                <option value="flash">BUILD &amp; FLASH</option>
                 <option value="hex">GENERATE .HEX</option>
                 <option value="elf">GENERATE .ELF</option>
             </select>
@@ -267,7 +296,6 @@
 
         <hr class="section-divider">
 
-        <!-- ── RAW TERMINAL ───────────────────────────────────────────── -->
         <p class="section-label">&gt; RAW_TERMINAL</p>
         <div class="controls-row">
             <input type="text" id="raw-cmd" placeholder="Any shell command, e.g. avr-gcc --version"
@@ -275,9 +303,8 @@
             <button class="execute-btn" onclick="runCmd()">EXEC</button>
         </div>
 
-        <!-- ── OUTPUT WINDOW ─────────────────────────────────────────── -->
-        <div id="output-window">[SYSTEM READY] — Waiting for instruction...
-        </div>
+        <div id="output-window">[SYSTEM READY] — Waiting for instruction...</div>
+
         <div id="status-bar">
             <span><span id="status-indicator"></span><span id="status-text">IDLE</span></span>
             <span id="exit-code"></span>
@@ -285,85 +312,146 @@
 
         <div class="ticker">
             <div class="ticker-inner">
-                &gt; DDRB |= (1 &lt;&lt; PB0); &nbsp;&nbsp; &gt; PORTD=0xFF; &nbsp;&nbsp; &gt; _delay_ms(500);
-                &nbsp;&nbsp; &gt; TCCR1B |=(1 &lt;&lt; CS12); &nbsp;&nbsp; &gt; ADCSRA |=(1 &lt;&lt; ADSC);
-                &nbsp;&nbsp; &gt; sei(); // Global Interrupt Enable
+                &gt; DDRB |= (1 &lt;&lt; PB0); &nbsp;&nbsp;
+                &gt; PORTD=0xFF; &nbsp;&nbsp;
+                &gt; _delay_ms(500); &nbsp;&nbsp;
+                &gt; TCCR1B |=(1 &lt;&lt; CS12); &nbsp;&nbsp;
+                &gt; ADCSRA |=(1 &lt;&lt; ADSC); &nbsp;&nbsp;
+                &gt; sei(); // Global Interrupt Enable
             </div>
         </div>
     </div>
 
     <footer>
         <a href="https://github.com/BayazidHabibSiddikee" target="_blank">GITHUB</a>
-        <a href="https://linkedin.com/in/YOUR_PROFILE" target="_blank">LINKEDIN</a>
-        <a href="https://facebook.com/YOUR_PROFILE" target="_blank">FACEBOOK</a>
-        <p style="font-size:0.6rem;color:#333;margin-top:10px;">PROTOTYPE v3.0 // CROSS-PLATFORM</p>
+        <a href="https://www.linkedin.com/in/bayazid-habib-siddikee-4262412b3" target="_blank">LINKEDIN</a>
+        <a href="https://www.youtube.com/@mtemind" target="_blank">YOUTUBE</a>
+        <a href="https://www.facebook.com/share/1bKM9PdJfN/" target="_blank">FACEBOOK</a>
+        <p style="font-size:0.6rem;color:#333;margin-top:10px;">PROTOTYPE v3.1 // CROSS-PLATFORM</p>
     </footer>
 
     <script>
         const out = document.getElementById('output-window');
         const indicator = document.getElementById('status-indicator');
         const statusText = document.getElementById('status-text');
-        const exitCode = document.getElementById('exit-code');
+        const exitCodeEl = document.getElementById('exit-code');
+        const connError = document.getElementById('conn-error');
+        const platformBadge = document.getElementById('platform-badge');
 
-        function setStatus(state, msg, code = '') {
-            indicator.className = state;   // 'running' | 'done' | 'error' | ''
+        // Detect platform from user-agent
+        (function detectPlatform() {
+            const ua = navigator.userAgent;
+            if (ua.includes('Win')) platformBadge.textContent = 'WINDOWS';
+            else if (ua.includes('Linux') && !ua.includes('Android')) platformBadge.textContent = 'LINUX';
+            else if (ua.includes('Mac')) platformBadge.textContent = 'MAC';
+            else if (ua.includes('Android')) platformBadge.textContent = 'TERMUX';
+            else platformBadge.textContent = 'UNKNOWN';
+        })();
+
+        function setStatus(state, msg, code) {
+            indicator.className = state;
             statusText.textContent = msg;
-            exitCode.textContent = code;
+            exitCodeEl.textContent = code || '';
         }
 
-        function appendOutput(text) {
-            out.textContent += text;
+        function appendLine(text, cls) {
+            const span = document.createElement('span');
+            if (cls) span.className = cls;
+            span.textContent = text + '\n';
+            out.appendChild(span);
             out.scrollTop = out.scrollHeight;
         }
 
         function clearOutput(label) {
-            out.textContent = `[${label}]\n`;
+            out.textContent = '';
+            appendLine('[' + label + ']', 'line-info');
         }
 
-        // ── AVR Toolchain ─────────────────────────────────────────────
+        function showError(msg) {
+            appendLine(msg, 'line-error');
+        }
+
+        // Check if server is alive
+        async function healthCheck() {
+            try {
+                const r = await fetch('/ping', { signal: AbortSignal.timeout(2000) });
+                if (r.ok) {
+                    connError.classList.remove('visible');
+                    return true;
+                }
+            } catch (e) { }
+            connError.classList.add('visible');
+            // Set hint based on detected platform
+            const p = platformBadge.textContent;
+            const hints = {
+                'WINDOWS': 'python terminal.py',
+                'LINUX': 'python3 terminal.py',
+                'MAC': 'python3 terminal.py',
+                'TERMUX': 'python3 terminal.py',
+            };
+            document.getElementById('conn-hint').textContent = hints[p] || 'python3 terminal.py';
+            return false;
+        }
+
+        // Run on load and every 10s
+        healthCheck();
+        setInterval(healthCheck, 10000);
+
+        // ── AVR Toolchain ─────────────────────────────────────────
         async function runAVR() {
             const filename = document.getElementById('filename').value.trim();
             const board = document.getElementById('board').value;
             const action = document.getElementById('action').value;
             const port = document.getElementById('port').value.trim();
 
-            if (!filename) { appendOutput('\n[ERROR] File path is required.\n'); return; }
+            if (!filename) { showError('[ERROR] File path is required.'); return; }
 
             const btn = document.getElementById('avr-btn');
             btn.disabled = true;
-            clearOutput(`${action.toUpperCase()} // ${filename} // ${board}`);
+            clearOutput(action.toUpperCase() + ' // ' + filename + ' // ' + board);
             setStatus('running', 'RUNNING...');
 
-            const params = new URLSearchParams({ action, filename, board, port });
             try {
+                const params = new URLSearchParams({ action, filename, board, port });
                 const res = await fetch('/avr?' + params);
                 const text = await res.text();
-                appendOutput(text);
+
+                // Parse response — server sends plain text
+                const lines = text.split('\n');
+                lines.forEach(line => {
+                    if (!line.trim()) return;
+                    if (line.includes('Error:') || line.includes('Failed') || line.includes('not found'))
+                        appendLine(line, 'line-error');
+                    else if (line.includes('Success') || line.includes('Flash Successful'))
+                        appendLine(line, 'line-success');
+                    else
+                        appendLine(line);
+                });
+
                 const ok = text.includes('Success') || text.includes('Flash Successful');
-                setStatus(ok ? 'done' : 'error', ok ? 'DONE' : 'FAILED',
-                    `EXIT: ${ok ? '0' : '1'}`);
+                setStatus(ok ? 'done' : 'error', ok ? 'DONE' : 'FAILED', 'EXIT: ' + (ok ? '0' : '1'));
             } catch (err) {
-                appendOutput(`\n[NETWORK ERROR] ${err}\n`);
-                setStatus('error', 'ERROR');
+                showError('[NETWORK ERROR] ' + err.message);
+                setStatus('error', 'CONN FAILED');
             }
             btn.disabled = false;
         }
 
-        // ── Raw Terminal ──────────────────────────────────────────────
+        // ── Raw Terminal ──────────────────────────────────────────
         async function runCmd() {
             const cmd = document.getElementById('raw-cmd').value.trim();
             if (!cmd) return;
-            clearOutput(`CMD: ${cmd}`);
+            clearOutput('CMD: ' + cmd);
             setStatus('running', 'RUNNING...');
 
             try {
                 const res = await fetch('/run?' + new URLSearchParams({ command: cmd }));
                 const text = await res.text();
-                appendOutput(text);
+                appendLine(text);
                 setStatus('done', 'DONE');
             } catch (err) {
-                appendOutput(`\n[NETWORK ERROR] ${err}\n`);
-                setStatus('error', 'ERROR');
+                showError('[NETWORK ERROR] ' + err.message);
+                setStatus('error', 'CONN FAILED');
             }
             document.getElementById('raw-cmd').value = '';
         }

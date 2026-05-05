@@ -1,12 +1,16 @@
-# ── GUI ───────────────────────────────────────────────────────────────────────
-#PySide6>=6.5.0
-#pip install PySide6
-
-# ── Standard library (no install needed) ─────────────────────────────────────
-# socket, subprocess, urllib.parse, threading, sys, os, shutil, platform
-
-# ── AVR toolchain (install via OS package manager, NOT pip) ──────────────────
-# Fedora:  sudo dnf install avr-gcc avr-libc avrdude
-# Ubuntu:  sudo apt install gcc-avr avr-libc avrdude
-# Windows: scoop install avr-gcc avrdude   (or install WinAVR manually)
-# Android: pkg install avr-toolchain avrdude   (Termux)
+# ══ AVR Control Plane — Python Dependencies ══
+#
+# OPTIONAL (for embedded Qt window instead of browser):
+PySide6>=6.5.0
+#
+# ── Everything else uses Python stdlib ──
+# http.server, subprocess, shutil, threading,
+# signal, os, sys, platform, urllib.parse
+#
+# ── AVR toolchain (NOT pip — use OS package manager) ──
+# See install scripts:
+#   install-apt.sh      → Ubuntu/Debian/Mint
+#   install-dnf.sh      → Fedora/RHEL
+#   install-pacman.sh   → Arch Linux
+#   install.bat         → Windows
+#   install-termux.sh   → Android Termux
