@@ -1,836 +1,720 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HELP — AVR Control Plane</title>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --blue:  #00d4ff;
-            --green: #00ff41;
-            --red:   #ff3131;
-            --amber: #ffaa00;
-            --bg:    #0a0b10;
-            --bg2:   #0d0f18;
-            --bg3:   #111320;
-            --line:  #1a1d2e;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AVR Control Plane — Help & Docs</title>
+<style>
+:root{
+  --neon-blue:#00d4ff;--terminal-green:#00ff41;
+  --dark-bg:#0a0b10;--panel:#0f1018;--panel2:#13141e;
+  --border:#1e2030;--error-red:#ff3131;--warn:#ff8800;
+  --text:#c0c4d0;--dim:#555;--code-bg:#060810;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--dark-bg);color:var(--text);font-family:'Courier New',Courier,monospace;
+     font-size:.82rem;line-height:1.65}
+a{color:var(--neon-blue);text-decoration:none}
+a:hover{color:#fff}
 
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── TOP NAV ── */
+nav{
+  position:sticky;top:0;z-index:99;
+  background:rgba(10,11,16,.96);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;flex-wrap:wrap;gap:4px;
+  padding:10px 24px;
+}
+nav .logo{color:var(--neon-blue);font-weight:bold;letter-spacing:3px;
+          text-shadow:0 0 8px var(--neon-blue);margin-right:20px;font-size:.9rem}
+nav a{color:var(--dim);padding:4px 10px;border:1px solid transparent;
+      border-radius:3px;font-size:.7rem;transition:.2s;white-space:nowrap}
+nav a:hover,nav a.active{color:var(--neon-blue);border-color:var(--neon-blue)}
+.back-btn{
+  margin-left:auto;background:var(--neon-blue);color:#000;
+  padding:5px 14px;border-radius:3px;font-weight:bold;font-size:.7rem;
+  cursor:pointer;border:none;transition:.2s
+}
+.back-btn:hover{background:#fff}
 
-        html { scroll-behavior: smooth; }
+/* ── LAYOUT ── */
+.wrap{max-width:920px;margin:0 auto;padding:32px 20px 80px}
+section{margin-bottom:56px}
+h2{
+  color:var(--neon-blue);text-transform:uppercase;letter-spacing:4px;
+  font-size:.9rem;margin-bottom:20px;padding-bottom:8px;
+  border-bottom:1px solid var(--border);
+  text-shadow:0 0 8px rgba(0,212,255,.4)
+}
+h3{color:#7fb3c8;font-size:.78rem;text-transform:uppercase;
+   letter-spacing:2px;margin:22px 0 10px}
+p{color:var(--text);margin-bottom:10px}
+ul,ol{padding-left:20px;margin-bottom:10px}
+li{margin-bottom:5px}
 
-        body {
-            background: var(--bg);
-            color: #c8cfe0;
-            font-family: 'Share Tech Mono', monospace;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
+/* ── PANELS ── */
+.card{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:4px;padding:20px;margin-bottom:16px
+}
+.card.warn{border-color:var(--warn);background:rgba(255,136,0,.05)}
+.card.info{border-color:var(--neon-blue);background:rgba(0,212,255,.04)}
+.card.ok  {border-color:var(--terminal-green);background:rgba(0,255,65,.04)}
 
-        /* ── Scanlines overlay ── */
-        body::before {
-            content: '';
-            position: fixed; inset: 0; z-index: 999; pointer-events: none;
-            background: repeating-linear-gradient(
-                0deg, transparent, transparent 2px,
-                rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px
-            );
-        }
+.tag-warn{color:var(--warn);font-weight:bold}
+.tag-ok  {color:var(--terminal-green);font-weight:bold}
+.tag-info{color:var(--neon-blue);font-weight:bold}
+.tag-err {color:var(--error-red);font-weight:bold}
 
-        /* ── TOP NAV ── */
-        nav {
-            position: sticky; top: 0; z-index: 100;
-            background: rgba(10,11,16,.92);
-            border-bottom: 1px solid var(--line);
-            backdrop-filter: blur(10px);
-            display: flex; align-items: center;
-            padding: 0 32px; height: 56px; gap: 32px;
-        }
-        .nav-logo {
-            font-family: 'Orbitron', monospace;
-            color: var(--blue); font-size: .85rem; font-weight: 700;
-            letter-spacing: 3px; text-decoration: none;
-            text-shadow: 0 0 12px var(--blue);
-        }
-        .nav-links { display: flex; gap: 24px; margin-left: auto; }
-        .nav-links a {
-            color: #556; font-size: .7rem; letter-spacing: 2px;
-            text-decoration: none; text-transform: uppercase;
-            transition: color .2s;
-        }
-        .nav-links a:hover, .nav-links a.active { color: var(--blue); }
+code{background:var(--code-bg);color:var(--terminal-green);
+     padding:2px 6px;border-radius:2px;font-size:.78rem}
+pre{
+  background:var(--code-bg);color:var(--terminal-green);
+  border-left:3px solid var(--terminal-green);
+  padding:14px 16px;overflow-x:auto;font-size:.76rem;
+  line-height:1.7;margin:10px 0;border-radius:0 4px 4px 0
+}
 
-        /* ── HERO ── */
-        .hero {
-            text-align: center; padding: 72px 20px 56px;
-            border-bottom: 1px solid var(--line);
-            position: relative; overflow: hidden;
-        }
-        .hero::after {
-            content: '';
-            position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-            width: 400px; height: 1px;
-            background: linear-gradient(90deg, transparent, var(--blue), transparent);
-        }
-        .hero-tag {
-            font-size: .65rem; letter-spacing: 6px; color: #444;
-            text-transform: uppercase; margin-bottom: 16px;
-        }
-        .hero h1 {
-            font-family: 'Orbitron', monospace;
-            font-size: clamp(1.8rem, 5vw, 3.2rem);
-            font-weight: 900; letter-spacing: 4px;
-            color: #fff;
-            text-shadow: 0 0 30px rgba(0,212,255,.3);
-            margin-bottom: 14px;
-        }
-        .hero h1 span { color: var(--blue); }
-        .hero p {
-            color: #556; font-size: .85rem; letter-spacing: 1px;
-            max-width: 500px; margin: 0 auto;
-        }
+/* ── TABLES ── */
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.75rem}
+th{background:var(--panel2);color:var(--neon-blue);text-transform:uppercase;
+   letter-spacing:1px;padding:8px 10px;text-align:left;border:1px solid var(--border)}
+td{padding:7px 10px;border:1px solid var(--border);color:var(--text)}
+tr:hover td{background:rgba(255,255,255,.02)}
+td.ok{color:var(--terminal-green)}
+td.warn{color:var(--warn)}
 
-        /* ── SECTION WRAPPER ── */
-        .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+/* ── STEP LIST ── */
+.steps{list-style:none;padding:0}
+.steps li{
+  display:flex;gap:12px;align-items:flex-start;
+  padding:10px 0;border-bottom:1px solid var(--border)
+}
+.steps li:last-child{border-bottom:none}
+.step-num{
+  flex-shrink:0;width:24px;height:24px;border-radius:50%;
+  background:var(--neon-blue);color:#000;font-weight:bold;
+  display:flex;align-items:center;justify-content:center;font-size:.72rem
+}
+.step-body{flex:1}
 
-        /* ── SECTION HEADER ── */
-        .sec-head {
-            display: flex; align-items: center; gap: 16px;
-            padding: 56px 0 28px;
-        }
-        .sec-head .num {
-            font-family: 'Orbitron', monospace;
-            font-size: .65rem; color: var(--blue);
-            border: 1px solid var(--blue);
-            padding: 4px 8px; opacity: .6;
-        }
-        .sec-head h2 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.1rem; font-weight: 700;
-            color: #fff; letter-spacing: 3px;
-        }
-        .sec-head .line {
-            flex: 1; height: 1px;
-            background: linear-gradient(90deg, var(--line), transparent);
-        }
+/* ── SVG DIAGRAMS ── */
+.diagram-wrap{
+  background:var(--code-bg);border:1px solid var(--border);
+  border-radius:4px;padding:16px;margin:16px 0;overflow-x:auto;
+  text-align:center
+}
+.diagram-wrap svg{max-width:100%;height:auto}
+.diagram-caption{color:var(--dim);font-size:.68rem;margin-top:8px;text-align:center}
 
-        /* ── WIRING DIAGRAMS ── */
-        .diagrams-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        .diagram-card {
-            background: var(--bg2);
-            border: 1px solid var(--line);
-            border-radius: 4px;
-            overflow: hidden;
-            transition: border-color .3s;
-        }
-        .diagram-card:hover { border-color: var(--blue); }
-        .diagram-card .card-label {
-            padding: 10px 16px;
-            background: var(--bg3);
-            border-bottom: 1px solid var(--line);
-            font-size: .65rem; color: var(--blue);
-            letter-spacing: 3px; text-transform: uppercase;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .diagram-card .card-label span { color: #334; }
-        .diagram-card img {
-            width: 100%; display: block;
-            cursor: zoom-in;
-            transition: transform .4s;
-        }
-        .diagram-card:hover img { transform: scale(1.01); }
+/* ── PIN TABLE ── */
+.pin-table{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0}
+.pin-card{background:var(--panel2);border:1px solid var(--border);
+          border-radius:4px;padding:14px}
+.pin-card h4{color:var(--neon-blue);font-size:.72rem;text-transform:uppercase;
+             letter-spacing:2px;margin-bottom:10px}
+.pin-row{display:flex;justify-content:space-between;padding:4px 0;
+         border-bottom:1px solid #1a1b23;font-size:.73rem}
+.pin-row:last-child{border-bottom:none}
+.pin-row .pname{color:var(--terminal-green)}
+.pin-row .pdesc{color:var(--dim)}
+.pin-row .pwire{font-weight:bold}
+.wire-red   {color:#ff5555}
+.wire-orange{color:#ff8800}
+.wire-yellow{color:#ffdd57}
+.wire-green {color:var(--terminal-green)}
+.wire-blue  {color:var(--neon-blue)}
+.wire-purple{color:#c792ea}
+.wire-white {color:#ddd}
+.wire-black {color:#888}
 
-        /* Lightbox */
-        #lb {
-            display: none; position: fixed; inset: 0; z-index: 500;
-            background: rgba(0,0,0,.92);
-            align-items: center; justify-content: center;
-            cursor: zoom-out;
-        }
-        #lb.open { display: flex; }
-        #lb img {
-            max-width: 94vw; max-height: 92vh;
-            border: 1px solid var(--blue);
-            box-shadow: 0 0 60px rgba(0,212,255,.2);
-        }
-        #lb-close {
-            position: absolute; top: 20px; right: 28px;
-            font-size: 1.6rem; color: #fff; cursor: pointer;
-            font-family: monospace; opacity: .7;
-        }
-        #lb-close:hover { opacity: 1; color: var(--blue); }
-
-        /* ISP pinout quick-ref */
-        .isp-box {
-            margin-top: 20px;
-            background: var(--bg3);
-            border: 1px solid var(--amber);
-            border-left: 3px solid var(--amber);
-            padding: 20px 24px;
-        }
-        .isp-box h3 {
-            font-family: 'Orbitron', monospace;
-            font-size: .75rem; color: var(--amber);
-            letter-spacing: 3px; margin-bottom: 16px;
-        }
-        .isp-table {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 8px;
-        }
-        .isp-row {
-            display: flex; justify-content: space-between;
-            padding: 6px 10px;
-            background: rgba(255,170,0,.04);
-            border: 1px solid #1e1a08;
-            font-size: .78rem;
-        }
-        .isp-row .pin-from { color: #aaa; }
-        .isp-row .arrow    { color: #333; }
-        .isp-row .pin-to   { color: var(--amber); font-weight: 600; }
-
-        /* ── VIDEOS ── */
-        .videos-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-        }
-        .video-card {
-            background: var(--bg2);
-            border: 1px solid var(--line);
-            border-radius: 4px; overflow: hidden;
-            transition: border-color .3s, box-shadow .3s;
-        }
-        .video-card:hover {
-            border-color: var(--green);
-            box-shadow: 0 0 20px rgba(0,255,65,.08);
-        }
-        .video-card .vid-label {
-            padding: 8px 14px;
-            background: var(--bg3);
-            border-bottom: 1px solid var(--line);
-            font-size: .6rem; color: var(--green);
-            letter-spacing: 3px;
-        }
-        .video-card video {
-            width: 100%; display: block;
-            background: #000;
-        }
-        .video-card .vid-note {
-            padding: 10px 14px;
-            font-size: .7rem; color: #445;
-            border-top: 1px solid var(--line);
-        }
-
-        /* ── YOUTUBE LINKS ── */
-        .yt-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 12px;
-        }
-        .yt-card {
-            display: flex; gap: 14px; align-items: center;
-            padding: 14px 18px;
-            background: var(--bg2); border: 1px solid var(--line);
-            text-decoration: none;
-            transition: border-color .25s, background .25s;
-        }
-        .yt-card:hover {
-            border-color: var(--red);
-            background: rgba(255,49,49,.04);
-        }
-        .yt-icon {
-            width: 36px; height: 36px; flex-shrink: 0;
-            background: var(--red);
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 2px;
-        }
-        .yt-icon svg { width: 18px; height: 18px; fill: #fff; }
-        .yt-info {}
-        .yt-title {
-            color: #ccc; font-size: .78rem; line-height: 1.4;
-            margin-bottom: 3px;
-        }
-        .yt-meta { font-size: .62rem; color: #445; letter-spacing: 1px; }
-
-        /* ── CODE EXAMPLES ── */
-        .code-tabs {
-            display: flex; gap: 0; border-bottom: 1px solid var(--line);
-            margin-bottom: 0;
-        }
-        .code-tab {
-            padding: 10px 20px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: .7rem; letter-spacing: 2px;
-            background: none; border: none; color: #445;
-            cursor: pointer; border-bottom: 2px solid transparent;
-            transition: .2s;
-        }
-        .code-tab.on {
-            color: var(--green);
-            border-bottom-color: var(--green);
-            background: rgba(0,255,65,.04);
-        }
-        .code-panel {
-            display: none;
-            background: var(--bg3); border: 1px solid var(--line);
-            border-top: none;
-        }
-        .code-panel.on { display: block; }
-        .code-panel .code-header {
-            display: flex; justify-content: space-between;
-            padding: 8px 16px;
-            background: rgba(0,255,65,.04);
-            border-bottom: 1px solid var(--line);
-            font-size: .62rem; color: #334; letter-spacing: 2px;
-        }
-        .code-panel pre {
-            padding: 20px;
-            overflow-x: auto;
-            font-size: .78rem;
-            line-height: 1.7;
-            color: #8fa8c8;
-        }
-        /* syntax colors */
-        .kw  { color: #00d4ff; }   /* keywords */
-        .cm  { color: #3d4a3d; }   /* comments */
-        .fn  { color: #00ff41; }   /* functions */
-        .nb  { color: #ffaa00; }   /* numbers/macros */
-        .st  { color: #ff6b6b; }   /* strings */
-        .tp  { color: #c678dd; }   /* types */
-
-        /* copy button */
-        .copy-btn {
-            background: none; border: 1px solid #223; color: #445;
-            font-family: inherit; font-size: .62rem;
-            padding: 3px 10px; cursor: pointer; letter-spacing: 1px;
-            transition: .2s;
-        }
-        .copy-btn:hover { border-color: var(--green); color: var(--green); }
-        .copy-btn.copied { color: var(--green); border-color: var(--green); }
-
-        /* ── FOOTER ── */
-        footer {
-            border-top: 1px solid var(--line);
-            padding: 32px; text-align: center;
-            font-size: .65rem; color: #334; letter-spacing: 2px;
-            margin-top: 80px;
-        }
-        footer a { color: var(--blue); text-decoration: none; margin: 0 12px; }
-        footer a:hover { color: #fff; }
-    </style>
+@media(max-width:580px){.pin-table{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 
-<!-- Lightbox -->
-<div id="lb" onclick="closeLB()">
-    <span id="lb-close" onclick="closeLB()">✕</span>
-    <img id="lb-img" src="" alt="">
-</div>
-
-<!-- Nav -->
+<!-- ── NAV ─────────────────────────────────────────────────────────────────── -->
 <nav>
-    <a href="index.html" class="nav-logo">AVR ⚡ CP</a>
-    <div class="nav-links">
-        <a href="index.html">← Back</a>
-        <a href="#wiring">Wiring</a>
-        <a href="#videos">Videos</a>
-        <a href="#youtube">YouTube</a>
-        <a href="#code">Code</a>
-    </div>
+  <span class="logo">▸ AVR DOCS</span>
+  <a href="#quickstart">QUICK START</a>
+  <a href="#wiring">WIRING</a>
+  <a href="#boards">BOARDS</a>
+  <a href="#procedures">PROCEDURES</a>
+  <a href="#fuses">FUSES</a>
+  <a href="#commands">COMMANDS</a>
+  <a href="#troubleshoot">TROUBLESHOOT</a>
+  <button class="back-btn" onclick="location.href='index.html'">← BACK</button>
 </nav>
 
-<!-- Hero -->
-<div class="hero">
-    <p class="hero-tag">// AVR COMMAND CENTER — DOCUMENTATION</p>
-    <h1>HELP <span>&amp;</span> REFERENCE</h1>
-    <p>Wiring diagrams · ISP setup · YouTube resources · Example code for ATmega chips</p>
+<div class="wrap">
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<section id="quickstart">
+<h2>⚡ Quick Start</h2>
+
+<div class="card info">
+  <span class="tag-info">[INFO]</span>
+  AVR Control Plane compiles your <code>.c</code> file with <code>avr-gcc</code> and
+  flashes it to the target chip using <code>avrdude</code>. Both tools must be installed.
 </div>
 
-<!-- ══════════════════════════════════════════════ -->
-<!-- SECTION 1 — WIRING DIAGRAMS -->
-<!-- ══════════════════════════════════════════════ -->
-<div class="wrap" id="wiring">
-    <div class="sec-head">
-        <span class="num">01</span>
-        <h2>ISP WIRING DIAGRAMS</h2>
-        <div class="line"></div>
-    </div>
-
-    <div class="diagrams-grid">
-        <div class="diagram-card">
-            <div class="card-label">
-                DIAGRAM_01 — Arduino UNO as ISP Programmer
-                <span>CLICK TO ZOOM</span>
-            </div>
-            <img src="technical-diagram-collage-showing-1-flowchart-of-h.jpeg"
-                 alt="Arduino UNO ISP Programmer wiring diagram"
-                 onclick="openLB(this.src)">
-        </div>
-        <div class="diagram-card">
-            <div class="card-label">
-                DIAGRAM_02 — ISP Connection Flowchart
-                <span>CLICK TO ZOOM</span>
-            </div>
-            <img src="technical-diagram-collage-showing-1-flowchart-of-h_1_.jpeg"
-                 alt="ISP Connection Flowchart"
-                 onclick="openLB(this.src)">
-        </div>
-        <div class="diagram-card">
-            <div class="card-label">
-                DIAGRAM_03 — ATmega8 / ATmega32 Pinout
-                <span>CLICK TO ZOOM</span>
-            </div>
-            <img src="technical-diagram-collage-showing-1-flowchart-of-h_2_.jpeg"
-                 alt="ATmega8 ATmega32 Pinout"
-                 onclick="openLB(this.src)">
-        </div>
-        <div class="diagram-card">
-            <div class="card-label">
-                DIAGRAM_04 — Full ISP Setup Reference
-                <span>CLICK TO ZOOM</span>
-            </div>
-            <img src="technical-diagram-collage-showing-1-flowchart-of-h_3_.jpeg"
-                 alt="Full ISP Setup Reference"
-                 onclick="openLB(this.src)">
-        </div>
-    </div>
-
-    <!-- ISP Quick-ref pinout table -->
-    <div class="isp-box">
-        <h3>⚡ ISP QUICK REFERENCE — Arduino UNO → ATmega</h3>
-        <div class="isp-table">
-            <div class="isp-row">
-                <span class="pin-from">Arduino Pin 11 (MOSI)</span>
-                <span class="arrow">──→</span>
-                <span class="pin-to">ATmega MOSI (Pin 17)</span>
-            </div>
-            <div class="isp-row">
-                <span class="pin-from">Arduino Pin 12 (MISO)</span>
-                <span class="arrow">──→</span>
-                <span class="pin-to">ATmega MISO (Pin 18)</span>
-            </div>
-            <div class="isp-row">
-                <span class="pin-from">Arduino Pin 13 (SCK)</span>
-                <span class="arrow">──→</span>
-                <span class="pin-to">ATmega SCK (Pin 19)</span>
-            </div>
-            <div class="isp-row">
-                <span class="pin-from">Arduino Pin 10 (SS)</span>
-                <span class="arrow">──→</span>
-                <span class="pin-to">ATmega RESET (Pin 1)</span>
-            </div>
-            <div class="isp-row">
-                <span class="pin-from">Arduino 5V</span>
-                <span class="arrow">──→</span>
-                <span class="pin-to">ATmega VCC</span>
-            </div>
-            <div class="isp-row">
-                <span class="pin-from">Arduino GND</span>
-                <span class="arrow">──→</span>
-                <span class="pin-to">ATmega GND</span>
-            </div>
-            <div class="isp-row">
-                <span class="pin-from">10µF Capacitor</span>
-                <span class="arrow">──→</span>
-                <span class="pin-to">Arduino RESET → GND</span>
-            </div>
-            <div class="isp-row">
-                <span class="pin-from">Programmer</span>
-                <span class="arrow">──→</span>
-                <span class="pin-to">arduino / stk500v1</span>
-            </div>
-        </div>
-    </div>
+<h3>1 — Install the AVR toolchain</h3>
+<div class="card">
+<table>
+  <tr><th>Platform</th><th>Command</th></tr>
+  <tr><td>Linux (Debian/Ubuntu)</td><td><code>sudo apt install gcc-avr avr-libc avrdude</code></td></tr>
+  <tr><td>Linux (Fedora)</td><td><code>sudo dnf install avr-gcc avr-libc avrdude</code></td></tr>
+  <tr><td>Linux (Arch)</td><td><code>sudo pacman -S avr-gcc avr-libc avrdude</code></td></tr>
+  <tr><td>macOS</td><td><code>brew install avr-gcc avrdude</code></td></tr>
+  <tr><td>Windows</td><td>Install <a href="https://winavr.sourceforge.net" target="_blank">WinAVR</a> or <code>scoop install avr-gcc avrdude</code></td></tr>
+  <tr><td>Termux (Android)</td><td><code>pkg install avr-toolchain avrdude</code></td></tr>
+</table>
 </div>
 
-<!-- ══════════════════════════════════════════════ -->
-<!-- SECTION 2 — LOCAL VIDEOS -->
-<!-- ══════════════════════════════════════════════ -->
-<div class="wrap" id="videos">
-    <div class="sec-head">
-        <span class="num">02</span>
-        <h2>VIDEO TUTORIALS</h2>
-        <div class="line"></div>
-    </div>
+<h3>2 — Start the backend</h3>
+<pre>python3 terminal.py          # Linux / macOS / Termux
+python  terminal.py          # Windows</pre>
+<p>The app opens automatically. If PySide6 is not installed it falls back to your system browser at <code>http://localhost:8090</code>.</p>
 
-    <div class="videos-grid">
-        <div class="video-card">
-            <div class="vid-label">VID_01 // ISP SETUP WALKTHROUGH</div>
-            <video controls preload="metadata">
-                <source src="video-1125416437319044.mp4" type="video/mp4">
-                Your browser does not support video.
-            </video>
-            <p class="vid-note">> Setting up Arduino UNO as ISP programmer</p>
-        </div>
-        <div class="video-card">
-            <div class="vid-label">VID_02 // FLASHING ATMEGA</div>
-            <video controls preload="metadata">
-                <source src="video-1125416440652377.mp4" type="video/mp4">
-                Your browser does not support video.
-            </video>
-            <p class="vid-note">> Burning bootloader and flashing hex files</p>
-        </div>
-        <div class="video-card">
-            <div class="vid-label">VID_03 // AVR-GCC TOOLCHAIN</div>
-            <video controls preload="metadata">
-                <source src="video-1125416443985710.mp4" type="video/mp4">
-                Your browser does not support video.
-            </video>
-            <p class="vid-note">> Compiling C code to ATmega hex format</p>
-        </div>
-        <div class="video-card">
-            <div class="vid-label">VID_04 // TROUBLESHOOTING</div>
-            <video controls preload="metadata">
-                <source src="video-1125416447319043.mp4" type="video/mp4">
-                Your browser does not support video.
-            </video>
-            <p class="vid-note">> Common errors and how to fix them</p>
-        </div>
-    </div>
+<h3>3 — Write and flash your program</h3>
+<ol class="steps">
+  <li><div class="step-num">1</div><div class="step-body">Wire your programmer to the target chip (see <a href="#wiring">Wiring</a> section).</div></li>
+  <li><div class="step-num">2</div><div class="step-body">Select <strong>TARGET_MCU</strong> matching your chip.</div></li>
+  <li><div class="step-num">3</div><div class="step-body">Select <strong>PROGRAMMER</strong> — <em>Arduino as ISP</em> is the most common choice for external chips.</div></li>
+  <li><div class="step-num">4</div><div class="step-body">Enter the <strong>FILE_PATH</strong> to your <code>.c</code> source, e.g. <code>/home/user/blink</code> (no extension).</div></li>
+  <li><div class="step-num">5</div><div class="step-body">Select <strong>SERIAL_PORT</strong> (click SCAN to auto-detect) and press <strong>RUN_PROCESS</strong>.</div></li>
+</ol>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<section id="wiring">
+<h2>🔌 Wiring Diagrams</h2>
+
+<div class="card warn">
+  <span class="tag-warn">[IMPORTANT]</span>
+  To flash an <em>external</em> chip (not the Arduino's own MCU), you must use
+  <strong>Arduino as ISP</strong> mode. First upload the <code>File → Examples → 11.ArduinoISP → ArduinoISP</code>
+  sketch to your Arduino, then come back here.
 </div>
 
-<!-- ══════════════════════════════════════════════ -->
-<!-- SECTION 3 — YOUTUBE -->
-<!-- ══════════════════════════════════════════════ -->
-<div class="wrap" id="youtube">
-    <div class="sec-head">
-        <span class="num">03</span>
-        <h2>YOUTUBE RESOURCES</h2>
-        <div class="line"></div>
-    </div>
+<!-- ── DIAGRAM 1: Arduino Uno as ISP → ATmega32A (DIP-40) ── -->
+<h3 id="isp-mega32">Arduino Uno as ISP → ATmega32A / ATmega32 / ATmega16 (DIP-40)</h3>
 
-    <div class="yt-grid">
-        <a class="yt-card" href="https://www.youtube.com/watch?v=Er_qwZKu_ew" target="_blank">
-            <div class="yt-icon"><svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div>
-            <div class="yt-info">
-                <p class="yt-title">Programming ATmega8 Without Arduino — Full Tutorial</p>
-                <p class="yt-meta">AVR-GCC · ISP · avrdude</p>
-            </div>
-        </a>
-        <a class="yt-card" href="https://www.youtube.com/watch?v=2EqVUO6_Y40" target="_blank">
-            <div class="yt-icon"><svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div>
-            <div class="yt-info">
-                <p class="yt-title">Arduino as ISP Programmer — Step by Step Wiring</p>
-                <p class="yt-meta">Arduino UNO · ISP · ATmega328P</p>
-            </div>
-        </a>
-        <a class="yt-card" href="https://www.youtube.com/watch?v=tlg3ZiMqNBQ" target="_blank">
-            <div class="yt-icon"><svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div>
-            <div class="yt-info">
-                <p class="yt-title">AVR Microcontroller Tutorial — Bare Metal C Programming</p>
-                <p class="yt-meta">ATmega32 · Registers · GPIO · Timers</p>
-            </div>
-        </a>
-        <a class="yt-card" href="https://www.youtube.com/watch?v=I3GNrDkNTu0" target="_blank">
-            <div class="yt-icon"><svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div>
-            <div class="yt-info">
-                <p class="yt-title">ATmega8 Timer & Interrupt Tutorial — No Arduino</p>
-                <p class="yt-meta">TCCR0 · Interrupts · _delay_ms · avr/io.h</p>
-            </div>
-        </a>
-        <a class="yt-card" href="https://www.youtube.com/watch?v=q5zDGKMuVAE" target="_blank">
-            <div class="yt-icon"><svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div>
-            <div class="yt-info">
-                <p class="yt-title">avrdude & avr-gcc Complete Setup on Linux / Windows</p>
-                <p class="yt-meta">Toolchain setup · Makefile · Compilation pipeline</p>
-            </div>
-        </a>
-        <a class="yt-card" href="https://www.youtube.com/watch?v=VrF4Kz9kYgA" target="_blank">
-            <div class="yt-icon"><svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div>
-            <div class="yt-info">
-                <p class="yt-title">ATmega ADC — Reading Analog Sensors in Pure C</p>
-                <p class="yt-meta">ADMUX · ADCSRA · 10-bit ADC · Voltage divider</p>
-            </div>
-        </a>
-        <a class="yt-card" href="https://www.youtube.com/watch?v=nJncSGMFjTM" target="_blank">
-            <div class="yt-icon"><svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div>
-            <div class="yt-info">
-                <p class="yt-title">UART Communication on ATmega — Send Data to PC</p>
-                <p class="yt-meta">USART · UBRR · Serial terminal · Baud rate</p>
-            </div>
-        </a>
-        <a class="yt-card" href="https://www.youtube.com/watch?v=D9l3TU_BFGA" target="_blank">
-            <div class="yt-icon"><svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div>
-            <div class="yt-info">
-                <p class="yt-title">ATmega PWM Tutorial — Controlling Motor Speed & LED</p>
-                <p class="yt-meta">Timer1 · Fast PWM · OCR1A · Motor driver</p>
-            </div>
-        </a>
-    </div>
+<div class="diagram-wrap">
+<svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" font-family="'Courier New',monospace">
+  <defs>
+    <marker id="ah" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0,8 3,0 6" fill="#555"/>
+    </marker>
+  </defs>
+
+  <!-- Arduino Uno body -->
+  <rect x="20" y="50" width="200" height="220" rx="6" fill="#0d1117" stroke="#00d4ff" stroke-width="1.5"/>
+  <text x="120" y="44" fill="#00d4ff" font-size="11" text-anchor="middle" letter-spacing="2">ARDUINO UNO</text>
+  <!-- Arduino pins left side -->
+  <text x="30" y="80"  fill="#555" font-size="9">5V</text>
+  <text x="30" y="100" fill="#555" font-size="9">GND</text>
+  <text x="30" y="120" fill="#ff8800" font-size="9">D10 (SS/RESET)</text>
+  <text x="30" y="140" fill="#00ff41" font-size="9">D11 (MOSI)</text>
+  <text x="30" y="160" fill="#00d4ff" font-size="9">D12 (MISO)</text>
+  <text x="30" y="180" fill="#c792ea" font-size="9">D13 (SCK)</text>
+  <!-- dots -->
+  <circle cx="22" cy="77"  r="3" fill="#ff5555"/>
+  <circle cx="22" cy="97"  r="3" fill="#888"/>
+  <circle cx="22" cy="117" r="3" fill="#ff8800"/>
+  <circle cx="22" cy="137" r="3" fill="#00ff41"/>
+  <circle cx="22" cy="157" r="3" fill="#00d4ff"/>
+  <circle cx="22" cy="177" r="3" fill="#c792ea"/>
+
+  <!-- ATmega32A DIP-40 body -->
+  <rect x="500" y="30" width="200" height="260" rx="4" fill="#0d1117" stroke="#00ff41" stroke-width="1.5"/>
+  <!-- notch -->
+  <path d="M580,30 Q600,18 620,30" fill="none" stroke="#00ff41" stroke-width="1.5"/>
+  <text x="600" y="24" fill="#00ff41" font-size="10" text-anchor="middle">ATMEGA32A</text>
+  <text x="600" y="36" fill="#555"    font-size="8"  text-anchor="middle">DIP-40</text>
+
+  <!-- Left pins of DIP (pins 1-20, top to bottom) — only labelling relevant ones -->
+  <!-- Pin 9  = VCC  -->
+  <!-- Pin 10 = GND  -->
+  <!-- Pin 12 = MOSI (PB5) -->
+  <!-- Pin 13 = MISO (PB6) -->
+  <!-- Pin 14 = SCK  (PB7) -->
+  <!-- Pin 9  = RST  (PC2) — actually reset is pin 9 on mega32 = PB0 is 1 -->
+  <!-- ATmega32A: Reset = pin 9 (PC2? No.) Actually reset on mega32 is pin 9 = RESET -->
+  <!-- ISP pins: MOSI=PB5=pin5, MISO=PB6=pin6, SCK=PB7=pin8, RESET=pin9 -->
+  <!-- VCC=pin10, GND=pin11, AVCC=pin30, AREF=pin32 -->
+
+  <!-- Right side pins (visible ones we care about) -->
+  <text x="688" y="95"  fill="#ff5555" font-size="9" text-anchor="end">VCC (pin 10)</text>
+  <text x="688" y="115" fill="#888"    font-size="9" text-anchor="end">GND (pin 11)</text>
+  <text x="688" y="135" fill="#ff8800" font-size="9" text-anchor="end">RESET (pin 9)</text>
+  <text x="688" y="155" fill="#00ff41" font-size="9" text-anchor="end">MOSI PB5 (pin 6)</text>
+  <text x="688" y="175" fill="#00d4ff" font-size="9" text-anchor="end">MISO PB6 (pin 7)</text>
+  <text x="688" y="195" fill="#c792ea" font-size="9" text-anchor="end">SCK  PB7 (pin 8)</text>
+  <text x="688" y="230" fill="#ff5555" font-size="9" text-anchor="end">AVCC (pin 30)</text>
+  <text x="688" y="250" fill="#888"    font-size="9" text-anchor="end">GND  (pin 21)</text>
+
+  <!-- connector dots on chip right edge -->
+  <circle cx="698" cy="92"  r="3" fill="#ff5555"/>
+  <circle cx="698" cy="112" r="3" fill="#888"/>
+  <circle cx="698" cy="132" r="3" fill="#ff8800"/>
+  <circle cx="698" cy="152" r="3" fill="#00ff41"/>
+  <circle cx="698" cy="172" r="3" fill="#00d4ff"/>
+  <circle cx="698" cy="192" r="3" fill="#c792ea"/>
+  <circle cx="698" cy="227" r="3" fill="#ff5555"/>
+  <circle cx="698" cy="247" r="3" fill="#888"/>
+
+  <!-- ── WIRES ── -->
+  <!-- 5V → VCC -->
+  <polyline points="22,77 360,77 360,92 698,92" fill="none" stroke="#ff5555" stroke-width="2" stroke-dasharray="6,3"/>
+  <!-- GND → GND pin11 -->
+  <polyline points="22,97 350,97 350,112 698,112" fill="none" stroke="#888" stroke-width="2" stroke-dasharray="6,3"/>
+  <!-- D10 → RESET -->
+  <polyline points="22,117 340,117 340,132 698,132" fill="none" stroke="#ff8800" stroke-width="2"/>
+  <!-- D11 → MOSI -->
+  <polyline points="22,137 330,137 330,152 698,152" fill="none" stroke="#00ff41" stroke-width="2"/>
+  <!-- D12 → MISO -->
+  <polyline points="22,157 320,157 320,172 698,172" fill="none" stroke="#00d4ff" stroke-width="2"/>
+  <!-- D13 → SCK -->
+  <polyline points="22,177 310,177 310,192 698,192" fill="none" stroke="#c792ea" stroke-width="2"/>
+  <!-- 5V → AVCC -->
+  <polyline points="22,77 370,77 370,227 698,227" fill="none" stroke="#ff5555" stroke-width="1.5" stroke-dasharray="4,4" opacity=".6"/>
+  <!-- GND → GND21 -->
+  <polyline points="22,97 380,97 380,247 698,247" fill="none" stroke="#888" stroke-width="1.5" stroke-dasharray="4,4" opacity=".6"/>
+
+  <!-- 100nF cap symbol near VCC/GND -->
+  <line x1="355" y1="270" x2="365" y2="270" stroke="#555" stroke-width="1.5"/>
+  <line x1="355" y1="278" x2="365" y2="278" stroke="#555" stroke-width="1.5"/>
+  <line x1="360" y1="257" x2="360" y2="270" stroke="#555" stroke-width="1"/>
+  <line x1="360" y1="278" x2="360" y2="290" stroke="#555" stroke-width="1"/>
+  <circle cx="360" cy="255" r="2" fill="#555"/>
+  <circle cx="360" cy="292" r="2" fill="#555"/>
+  <text x="372" y="276" fill="#555" font-size="8">100nF</text>
+  <text x="372" y="286" fill="#555" font-size="8">bypass cap</text>
+  <!-- small lines from 5V/GND buses to cap -->
+  <line x1="360" y1="97"  x2="360" y2="255" stroke="#888" stroke-width=".8" stroke-dasharray="2,3" opacity=".4"/>
+  <line x1="358" y1="77"  x2="358" y2="253" stroke="#ff5555" stroke-width=".8" stroke-dasharray="2,3" opacity=".4"/>
+
+  <!-- Legend -->
+  <rect x="220" y="250" width="270" height="54" rx="3" fill="#0a0b10" stroke="#1e2030"/>
+  <text x="228" y="264" fill="#555" font-size="8">WIRE LEGEND:</text>
+  <circle cx="232" cy="276" r="3" fill="#ff5555"/><text x="240" y="279" fill="#ff5555" font-size="8">5V / VCC / AVCC</text>
+  <circle cx="232" cy="290" r="3" fill="#888"/><text x="240" y="293" fill="#888"    font-size="8">GND</text>
+  <circle cx="320" cy="276" r="3" fill="#ff8800"/><text x="328" y="279" fill="#ff8800" font-size="8">RESET (D10)</text>
+  <circle cx="320" cy="290" r="3" fill="#00ff41"/><text x="328" y="293" fill="#00ff41" font-size="8">MOSI (D11)</text>
+  <circle cx="408" cy="276" r="3" fill="#00d4ff"/><text x="416" y="279" fill="#00d4ff" font-size="8">MISO (D12)</text>
+  <circle cx="408" cy="290" r="3" fill="#c792ea"/><text x="416" y="293" fill="#c792ea" font-size="8">SCK  (D13)</text>
+</svg>
+</div>
+<div class="diagram-caption">Arduino Uno (ISP mode) → ATmega32A / ATmega32 / ATmega16 (same ISP pinout). Add a 10µF capacitor between RESET and GND on the Arduino to prevent auto-reset.</div>
+
+<!-- ── PIN TABLE for DIP-40 ── -->
+<div class="pin-table">
+  <div class="pin-card">
+    <h4>Arduino Uno pins</h4>
+    <div class="pin-row"><span class="pname">5V</span><span class="pwire wire-red">RED</span><span class="pdesc">Power</span></div>
+    <div class="pin-row"><span class="pname">GND</span><span class="pwire wire-black">BLACK</span><span class="pdesc">Ground</span></div>
+    <div class="pin-row"><span class="pname">D10</span><span class="pwire wire-orange">ORANGE</span><span class="pdesc">→ RESET</span></div>
+    <div class="pin-row"><span class="pname">D11</span><span class="pwire wire-green">GREEN</span><span class="pdesc">→ MOSI</span></div>
+    <div class="pin-row"><span class="pname">D12</span><span class="pwire wire-blue">BLUE</span><span class="pdesc">→ MISO</span></div>
+    <div class="pin-row"><span class="pname">D13</span><span class="pwire wire-purple">PURPLE</span><span class="pdesc">→ SCK</span></div>
+  </div>
+  <div class="pin-card">
+    <h4>ATmega32A / 32 / 16 (DIP-40)</h4>
+    <div class="pin-row"><span class="pname">Pin 10 VCC</span><span class="pwire wire-red">RED</span><span class="pdesc">← 5V</span></div>
+    <div class="pin-row"><span class="pname">Pin 11 GND</span><span class="pwire wire-black">BLACK</span><span class="pdesc">← GND</span></div>
+    <div class="pin-row"><span class="pname">Pin 21 GND</span><span class="pwire wire-black">BLACK</span><span class="pdesc">← GND (2nd GND)</span></div>
+    <div class="pin-row"><span class="pname">Pin 30 AVCC</span><span class="pwire wire-red">RED</span><span class="pdesc">← 5V (ADC power)</span></div>
+    <div class="pin-row"><span class="pname">Pin 9 RESET</span><span class="pwire wire-orange">ORANGE</span><span class="pdesc">← D10</span></div>
+    <div class="pin-row"><span class="pname">Pin 6 MOSI (PB5)</span><span class="pwire wire-green">GREEN</span><span class="pdesc">← D11</span></div>
+    <div class="pin-row"><span class="pname">Pin 7 MISO (PB6)</span><span class="pwire wire-blue">BLUE</span><span class="pdesc">← D12</span></div>
+    <div class="pin-row"><span class="pname">Pin 8 SCK (PB7)</span><span class="pwire wire-purple">PURPLE</span><span class="pdesc">← D13</span></div>
+  </div>
 </div>
 
-<!-- ══════════════════════════════════════════════ -->
-<!-- SECTION 4 — CODE EXAMPLES -->
-<!-- ══════════════════════════════════════════════ -->
-<div class="wrap" id="code">
-    <div class="sec-head">
-        <span class="num">04</span>
-        <h2>ATmega CODE EXAMPLES</h2>
-        <div class="line"></div>
-    </div>
 
-    <div class="code-tabs">
-        <button class="code-tab on" onclick="showTab('blink',this)">BLINK LED</button>
-        <button class="code-tab" onclick="showTab('uart',this)">UART</button>
-        <button class="code-tab" onclick="showTab('adc',this)">ADC READ</button>
-        <button class="code-tab" onclick="showTab('pwm',this)">PWM</button>
-        <button class="code-tab" onclick="showTab('timer',this)">TIMER ISR</button>
-        <button class="code-tab" onclick="showTab('7seg',this)">7-SEGMENT</button>
-    </div>
+<!-- ── DIAGRAM 2: ATmega328P standalone ── -->
+<h3 id="isp-mega328">Arduino Uno as ISP → ATmega328P (DIP-28) Standalone</h3>
 
-    <!-- BLINK -->
-    <div class="code-panel on" id="tab-blink">
-        <div class="code-header">
-            <span>blink.c — ATmega8/32/328P · Blink LED on PB0</span>
-            <button class="copy-btn" onclick="copyCode('tab-blink')">COPY</button>
-        </div>
-        <pre><code><span class="cm">// Blink LED connected to PB0 — works on ATmega8, ATmega32, ATmega328P</span>
-<span class="cm">// Compile: avr-gcc -mmcu=atmega8 -Os -o blink.elf blink.c</span>
-<span class="cm">// Hex:     avr-objcopy -O ihex blink.elf blink.hex</span>
+<div class="diagram-wrap">
+<svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" font-family="'Courier New',monospace">
 
-<span class="kw">#include</span> <span class="st">&lt;avr/io.h&gt;</span>
-<span class="kw">#include</span> <span class="st">&lt;util/delay.h&gt;</span>
+  <!-- Arduino Uno -->
+  <rect x="20" y="40" width="190" height="200" rx="6" fill="#0d1117" stroke="#00d4ff" stroke-width="1.5"/>
+  <text x="115" y="34" fill="#00d4ff" font-size="11" text-anchor="middle" letter-spacing="2">ARDUINO UNO</text>
+  <circle cx="22" cy="67"  r="3" fill="#ff5555"/>
+  <circle cx="22" cy="87"  r="3" fill="#888"/>
+  <circle cx="22" cy="107" r="3" fill="#ff8800"/>
+  <circle cx="22" cy="127" r="3" fill="#00ff41"/>
+  <circle cx="22" cy="147" r="3" fill="#00d4ff"/>
+  <circle cx="22" cy="167" r="3" fill="#c792ea"/>
+  <text x="30" y="70"  fill="#555" font-size="9">5V</text>
+  <text x="30" y="90"  fill="#555" font-size="9">GND</text>
+  <text x="30" y="110" fill="#ff8800" font-size="9">D10 → RESET</text>
+  <text x="30" y="130" fill="#00ff41" font-size="9">D11 → MOSI</text>
+  <text x="30" y="150" fill="#00d4ff" font-size="9">D12 → MISO</text>
+  <text x="30" y="170" fill="#c792ea" font-size="9">D13 → SCK</text>
 
-<span class="tp">int</span> <span class="fn">main</span>(<span class="tp">void</span>) {
-    <span class="cm">// Set PB0 as output</span>
-    DDRB |= (<span class="nb">1</span> &lt;&lt; <span class="nb">PB0</span>);
+  <!-- ATmega328P DIP-28 -->
+  <rect x="490" y="30" width="180" height="220" rx="4" fill="#0d1117" stroke="#00ff41" stroke-width="1.5"/>
+  <path d="M565,30 Q580,20 595,30" fill="none" stroke="#00ff41" stroke-width="1.5"/>
+  <text x="580" y="22" fill="#00ff41" font-size="10" text-anchor="middle">ATMEGA328P</text>
+  <text x="580" y="33" fill="#555"    font-size="8"  text-anchor="middle">DIP-28</text>
 
-    <span class="kw">while</span> (<span class="nb">1</span>) {
-        PORTB |=  (<span class="nb">1</span> &lt;&lt; <span class="nb">PB0</span>);  <span class="cm">// LED ON</span>
-        <span class="fn">_delay_ms</span>(<span class="nb">500</span>);
-        PORTB &amp;= ~(<span class="nb">1</span> &lt;&lt; <span class="nb">PB0</span>);  <span class="cm">// LED OFF</span>
-        <span class="fn">_delay_ms</span>(<span class="nb">500</span>);
-    }
-    <span class="kw">return</span> <span class="nb">0</span>;
-}</code></pre>
-    </div>
+  <!-- Right-side relevant pins -->
+  <!-- VCC=pin7, GND=pin8&22, AVCC=pin20, AREF=pin21, RESET=pin1, MOSI=PB3=pin17, MISO=PB4=pin18, SCK=PB5=pin19 -->
+  <circle cx="670" cy="75"  r="3" fill="#ff5555"/>
+  <circle cx="670" cy="95"  r="3" fill="#888"/>
+  <circle cx="670" cy="115" r="3" fill="#ff8800"/>
+  <circle cx="670" cy="135" r="3" fill="#00ff41"/>
+  <circle cx="670" cy="155" r="3" fill="#00d4ff"/>
+  <circle cx="670" cy="175" r="3" fill="#c792ea"/>
+  <circle cx="670" cy="210" r="3" fill="#ff5555"/>
+  <circle cx="670" cy="228" r="3" fill="#888"/>
+  <text x="662" y="78"  fill="#ff5555" font-size="9" text-anchor="end">VCC  (pin 7)</text>
+  <text x="662" y="98"  fill="#888"    font-size="9" text-anchor="end">GND  (pin 8)</text>
+  <text x="662" y="118" fill="#ff8800" font-size="9" text-anchor="end">RESET(pin 1)</text>
+  <text x="662" y="138" fill="#00ff41" font-size="9" text-anchor="end">MOSI PB3 (p17)</text>
+  <text x="662" y="158" fill="#00d4ff" font-size="9" text-anchor="end">MISO PB4 (p18)</text>
+  <text x="662" y="178" fill="#c792ea" font-size="9" text-anchor="end">SCK  PB5 (p19)</text>
+  <text x="662" y="213" fill="#ff5555" font-size="9" text-anchor="end">AVCC (pin 20)</text>
+  <text x="662" y="231" fill="#888"    font-size="9" text-anchor="end">GND  (pin 22)</text>
 
-    <!-- UART -->
-    <div class="code-panel" id="tab-uart">
-        <div class="code-header">
-            <span>uart.c — ATmega8 · 9600 baud UART transmit</span>
-            <button class="copy-btn" onclick="copyCode('tab-uart')">COPY</button>
-        </div>
-        <pre><code><span class="cm">// Send "Hello ATmega!" over UART at 9600 baud — ATmega8 @ 8MHz</span>
-<span class="kw">#include</span> <span class="st">&lt;avr/io.h&gt;</span>
-<span class="kw">#include</span> <span class="st">&lt;util/delay.h&gt;</span>
+  <!-- wires -->
+  <polyline points="22,67 340,67 340,75 670,75"  fill="none" stroke="#ff5555" stroke-width="2" stroke-dasharray="6,3"/>
+  <polyline points="22,87 330,87 330,95 670,95"  fill="none" stroke="#888"    stroke-width="2" stroke-dasharray="6,3"/>
+  <polyline points="22,107 320,107 320,115 670,115" fill="none" stroke="#ff8800" stroke-width="2"/>
+  <polyline points="22,127 310,127 310,135 670,135" fill="none" stroke="#00ff41" stroke-width="2"/>
+  <polyline points="22,147 300,147 300,155 670,155" fill="none" stroke="#00d4ff" stroke-width="2"/>
+  <polyline points="22,167 290,167 290,175 670,175" fill="none" stroke="#c792ea" stroke-width="2"/>
+  <polyline points="22,67 350,67 350,210 670,210"  fill="none" stroke="#ff5555" stroke-width="1.5" stroke-dasharray="4,4" opacity=".5"/>
+  <polyline points="22,87 360,87 360,228 670,228"  fill="none" stroke="#888"    stroke-width="1.5" stroke-dasharray="4,4" opacity=".5"/>
+</svg>
+</div>
+<div class="diagram-caption">ATmega328P standalone (no bootloader needed). Use <em>Arduino as ISP</em> programmer in the UI at 19200 baud.</div>
 
-<span class="kw">#define</span> <span class="nb">BAUD</span>    <span class="nb">9600</span>
-<span class="kw">#define</span> <span class="nb">F_CPU</span>   <span class="nb">8000000UL</span>
-<span class="kw">#define</span> <span class="nb">UBRR_V</span>  ((<span class="nb">F_CPU</span> / (<span class="nb">16UL</span> * <span class="nb">BAUD</span>)) - <span class="nb">1</span>)
+<div class="pin-table">
+  <div class="pin-card">
+    <h4>ATmega328P key pins</h4>
+    <div class="pin-row"><span class="pname">Pin 1  — RESET</span><span class="pdesc">Pull-up 10kΩ to VCC recommended</span></div>
+    <div class="pin-row"><span class="pname">Pin 7  — VCC</span><span class="pdesc">3.3V or 5V</span></div>
+    <div class="pin-row"><span class="pname">Pin 8  — GND</span><span class="pdesc">Ground</span></div>
+    <div class="pin-row"><span class="pname">Pin 17 — MOSI (PB3)</span><span class="pdesc">← D11</span></div>
+    <div class="pin-row"><span class="pname">Pin 18 — MISO (PB4)</span><span class="pdesc">→ D12</span></div>
+    <div class="pin-row"><span class="pname">Pin 19 — SCK  (PB5)</span><span class="pdesc">← D13</span></div>
+    <div class="pin-row"><span class="pname">Pin 20 — AVCC</span><span class="pdesc">Connect to VCC (ADC power)</span></div>
+    <div class="pin-row"><span class="pname">Pin 22 — GND</span><span class="pdesc">Ground (2nd pin)</span></div>
+  </div>
+  <div class="pin-card">
+    <h4>Minimal power circuit</h4>
+    <p style="font-size:.72rem;color:var(--dim);margin-bottom:8px">Place these components near the chip:</p>
+    <div class="pin-row"><span class="pname">100nF cap</span><span class="pdesc">VCC → GND (bypass)</span></div>
+    <div class="pin-row"><span class="pname">10µF cap</span><span class="pdesc">VCC → GND (bulk)</span></div>
+    <div class="pin-row"><span class="pname">10kΩ resistor</span><span class="pdesc">RESET → VCC (pull-up)</span></div>
+    <div class="pin-row"><span class="pname">16 MHz crystal</span><span class="pdesc">XTAL1 (pin9) + XTAL2 (pin10)</span></div>
+    <div class="pin-row"><span class="pname">2× 22pF cap</span><span class="pdesc">Each XTAL pin → GND</span></div>
+  </div>
+</div>
 
-<span class="tp">void</span> <span class="fn">uart_init</span>(<span class="tp">void</span>) {
-    UBRRH = (<span class="tp">uint8_t</span>)(<span class="nb">UBRR_V</span> &gt;&gt; <span class="nb">8</span>);
-    UBRRL = (<span class="tp">uint8_t</span>)<span class="nb">UBRR_V</span>;
-    UCSRB = (<span class="nb">1</span> &lt;&lt; TXEN);                  <span class="cm">// Enable TX</span>
-    UCSRC = (<span class="nb">1</span> &lt;&lt; URSEL) | (<span class="nb">1</span> &lt;&lt; UCSZ1) | (<span class="nb">1</span> &lt;&lt; UCSZ0); <span class="cm">// 8-N-1</span>
-}
 
-<span class="tp">void</span> <span class="fn">uart_putc</span>(<span class="tp">char</span> c) {
-    <span class="kw">while</span> (!(UCSRA &amp; (<span class="nb">1</span> &lt;&lt; UDRE)));       <span class="cm">// Wait TX ready</span>
-    UDR = c;
-}
+<!-- ── DIAGRAM 3: ATtiny85 ── -->
+<h3 id="isp-tiny85">Arduino Uno as ISP → ATtiny85 (DIP-8)</h3>
 
-<span class="tp">void</span> <span class="fn">uart_puts</span>(<span class="kw">const</span> <span class="tp">char</span> *s) {
-    <span class="kw">while</span> (*s) <span class="fn">uart_putc</span>(*s++);
-}
+<div class="diagram-wrap">
+<svg viewBox="0 0 680 240" xmlns="http://www.w3.org/2000/svg" font-family="'Courier New',monospace">
 
-<span class="tp">int</span> <span class="fn">main</span>(<span class="tp">void</span>) {
-    <span class="fn">uart_init</span>();
-    <span class="kw">while</span> (<span class="nb">1</span>) {
-        <span class="fn">uart_puts</span>(<span class="st">"Hello ATmega!\r\n"</span>);
-        <span class="fn">_delay_ms</span>(<span class="nb">1000</span>);
-    }
-}</code></pre>
-    </div>
+  <!-- Arduino -->
+  <rect x="20" y="30" width="190" height="180" rx="6" fill="#0d1117" stroke="#00d4ff" stroke-width="1.5"/>
+  <text x="115" y="24" fill="#00d4ff" font-size="11" text-anchor="middle" letter-spacing="2">ARDUINO UNO</text>
+  <circle cx="22" cy="57"  r="3" fill="#ff5555"/>
+  <circle cx="22" cy="77"  r="3" fill="#888"/>
+  <circle cx="22" cy="97"  r="3" fill="#ff8800"/>
+  <circle cx="22" cy="117" r="3" fill="#00ff41"/>
+  <circle cx="22" cy="137" r="3" fill="#00d4ff"/>
+  <circle cx="22" cy="157" r="3" fill="#c792ea"/>
+  <text x="30" y="60"  fill="#555" font-size="9">5V</text>
+  <text x="30" y="80"  fill="#555" font-size="9">GND</text>
+  <text x="30" y="100" fill="#ff8800" font-size="9">D10 → RESET</text>
+  <text x="30" y="120" fill="#00ff41" font-size="9">D11 → MOSI</text>
+  <text x="30" y="140" fill="#00d4ff" font-size="9">D12 → MISO</text>
+  <text x="30" y="160" fill="#c792ea" font-size="9">D13 → SCK</text>
 
-    <!-- ADC -->
-    <div class="code-panel" id="tab-adc">
-        <div class="code-header">
-            <span>adc.c — ATmega8/32 · Read analog value from ADC0</span>
-            <button class="copy-btn" onclick="copyCode('tab-adc')">COPY</button>
-        </div>
-        <pre><code><span class="cm">// Read 10-bit ADC value from ADC0 (PC0) — ATmega8/32</span>
-<span class="kw">#include</span> <span class="st">&lt;avr/io.h&gt;</span>
-<span class="kw">#include</span> <span class="st">&lt;util/delay.h&gt;</span>
+  <!-- ATtiny85 DIP-8 -->
+  <rect x="490" y="60" width="160" height="120" rx="4" fill="#0d1117" stroke="#00ff41" stroke-width="1.5"/>
+  <path d="M553,60 Q570,48 587,60" fill="none" stroke="#00ff41" stroke-width="1.5"/>
+  <text x="570" y="50" fill="#00ff41" font-size="10" text-anchor="middle">ATTINY85</text>
+  <text x="570" y="62" fill="#555"    font-size="8"  text-anchor="middle">DIP-8</text>
 
-<span class="tp">void</span> <span class="fn">adc_init</span>(<span class="tp">void</span>) {
-    <span class="cm">// AVcc reference, MUX = ADC0</span>
-    ADMUX  = (<span class="nb">1</span> &lt;&lt; REFS0);
-    <span class="cm">// Enable ADC, prescaler = 64 (125kHz @ 8MHz)</span>
-    ADCSRA = (<span class="nb">1</span> &lt;&lt; ADEN) | (<span class="nb">1</span> &lt;&lt; ADPS2) | (<span class="nb">1</span> &lt;&lt; ADPS1);
-}
+  <!-- Right side pins: VCC=pin8, GND=pin4, RESET=pin1, MOSI=PB0=pin5, MISO=PB1=pin6, SCK=PB2=pin7 -->
+  <circle cx="650" cy="80"  r="3" fill="#ff5555"/>
+  <circle cx="650" cy="100" r="3" fill="#888"/>
+  <circle cx="650" cy="120" r="3" fill="#ff8800"/>
+  <circle cx="650" cy="140" r="3" fill="#00ff41"/>
+  <circle cx="650" cy="155" r="3" fill="#00d4ff"/>
+  <circle cx="650" cy="170" r="3" fill="#c792ea"/>
+  <text x="642" y="83"  fill="#ff5555" font-size="9" text-anchor="end">VCC  (pin 8)</text>
+  <text x="642" y="103" fill="#888"    font-size="9" text-anchor="end">GND  (pin 4)</text>
+  <text x="642" y="123" fill="#ff8800" font-size="9" text-anchor="end">RESET(pin 1)</text>
+  <text x="642" y="143" fill="#00ff41" font-size="9" text-anchor="end">MOSI PB0(p5)</text>
+  <text x="642" y="158" fill="#00d4ff" font-size="9" text-anchor="end">MISO PB1(p6)</text>
+  <text x="642" y="173" fill="#c792ea" font-size="9" text-anchor="end">SCK  PB2(p7)</text>
 
-<span class="tp">uint16_t</span> <span class="fn">adc_read</span>(<span class="tp">uint8_t</span> channel) {
-    ADMUX = (<span class="nb">1</span> &lt;&lt; REFS0) | (channel &amp; <span class="nb">0x07</span>);
-    ADCSRA |= (<span class="nb">1</span> &lt;&lt; ADSC);                <span class="cm">// Start conversion</span>
-    <span class="kw">while</span> (ADCSRA &amp; (<span class="nb">1</span> &lt;&lt; ADSC));          <span class="cm">// Wait</span>
-    <span class="kw">return</span> ADC;                             <span class="cm">// 0–1023</span>
-}
+  <!-- wires -->
+  <polyline points="22,57 330,57 330,80 650,80"  fill="none" stroke="#ff5555" stroke-width="2" stroke-dasharray="6,3"/>
+  <polyline points="22,77 320,77 320,100 650,100" fill="none" stroke="#888"    stroke-width="2" stroke-dasharray="6,3"/>
+  <polyline points="22,97 310,97 310,120 650,120" fill="none" stroke="#ff8800" stroke-width="2"/>
+  <polyline points="22,117 300,117 300,140 650,140" fill="none" stroke="#00ff41" stroke-width="2"/>
+  <polyline points="22,137 290,137 290,155 650,155" fill="none" stroke="#00d4ff" stroke-width="2"/>
+  <polyline points="22,157 280,157 280,170 650,170" fill="none" stroke="#c792ea" stroke-width="2"/>
 
-<span class="tp">int</span> <span class="fn">main</span>(<span class="tp">void</span>) {
-    <span class="fn">adc_init</span>();
-    DDRB = <span class="nb">0xFF</span>;                            <span class="cm">// PORTB as output</span>
-    <span class="kw">while</span> (<span class="nb">1</span>) {
-        <span class="tp">uint16_t</span> val = <span class="fn">adc_read</span>(<span class="nb">0</span>);       <span class="cm">// Read ADC0</span>
-        <span class="cm">// Map 0–1023 to 0–255 and output on PORTB</span>
-        PORTB = (<span class="tp">uint8_t</span>)(val &gt;&gt; <span class="nb">2</span>);
-        <span class="fn">_delay_ms</span>(<span class="nb">100</span>);
-    }
-}</code></pre>
-    </div>
+  <!-- note: 10µF cap on Arduino reset -->
+  <text x="240" y="200" fill="#555" font-size="8">Add 10µF cap on Arduino RESET → GND to prevent auto-reset during upload</text>
+</svg>
+</div>
+<div class="diagram-caption">ATtiny85 DIP-8. ATtiny84 uses the same ISP pins but in a DIP-14 package — check the datasheet for pin numbers.</div>
 
-    <!-- PWM -->
-    <div class="code-panel" id="tab-pwm">
-        <div class="code-header">
-            <span>pwm.c — ATmega8 · Fast PWM on OC1A (PB1)</span>
-            <button class="copy-btn" onclick="copyCode('tab-pwm')">COPY</button>
-        </div>
-        <pre><code><span class="cm">// Hardware Fast PWM on Timer1 OC1A pin — ATmega8</span>
-<span class="cm">// Connect LED or motor driver to PB1</span>
-<span class="kw">#include</span> <span class="st">&lt;avr/io.h&gt;</span>
-<span class="kw">#include</span> <span class="st">&lt;util/delay.h&gt;</span>
+<div class="card warn" style="margin-top:16px">
+  <span class="tag-warn">[ANTI-RESET CAP]</span>
+  Put a <strong>10µF electrolytic capacitor</strong> between the Arduino's
+  <code>RESET</code> pin and <code>GND</code> (positive leg to RESET).
+  This prevents the Arduino from resetting itself when avrdude connects, which would break the ISP session.
+</div>
+</section>
 
-<span class="tp">void</span> <span class="fn">pwm_init</span>(<span class="tp">void</span>) {
-    DDRB |= (<span class="nb">1</span> &lt;&lt; PB1);                    <span class="cm">// OC1A as output</span>
-    <span class="cm">// Fast PWM, 8-bit, non-inverting, prescaler=8</span>
-    TCCR1A = (<span class="nb">1</span> &lt;&lt; COM1A1) | (<span class="nb">1</span> &lt;&lt; WGM10);
-    TCCR1B = (<span class="nb">1</span> &lt;&lt; WGM12)  | (<span class="nb">1</span> &lt;&lt; CS11);
-}
 
-<span class="tp">void</span> <span class="fn">pwm_set</span>(<span class="tp">uint8_t</span> duty) {
-    OCR1A = duty;                           <span class="cm">// 0=off, 255=full</span>
-}
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<section id="boards">
+<h2>📋 Supported Boards</h2>
 
-<span class="tp">int</span> <span class="fn">main</span>(<span class="tp">void</span>) {
-    <span class="fn">pwm_init</span>();
-    <span class="kw">while</span> (<span class="nb">1</span>) {
-        <span class="cm">// Fade up</span>
-        <span class="kw">for</span> (<span class="tp">uint8_t</span> i = <span class="nb">0</span>; i &lt; <span class="nb">255</span>; i++) {
-            <span class="fn">pwm_set</span>(i);
-            <span class="fn">_delay_ms</span>(<span class="nb">8</span>);
-        }
-        <span class="cm">// Fade down</span>
-        <span class="kw">for</span> (<span class="tp">uint8_t</span> i = <span class="nb">255</span>; i &gt; <span class="nb">0</span>; i--) {
-            <span class="fn">pwm_set</span>(i);
-            <span class="fn">_delay_ms</span>(<span class="nb">8</span>);
-        }
-    }
-}</code></pre>
-    </div>
+<table>
+  <tr><th>Chip</th><th>Package</th><th>Flash</th><th>RAM</th><th>Pins (I/O)</th><th>Notes</th></tr>
+  <tr><td>ATmega8 / 8A</td><td>DIP-28</td><td>8KB</td><td>1KB</td><td>23</td><td>Classic, 3.3–5V</td></tr>
+  <tr><td>ATmega16 / 16A</td><td>DIP-40</td><td>16KB</td><td>1KB</td><td>32</td><td>Same ISP as mega32</td></tr>
+  <tr><td class="ok">ATmega32 / 32A</td><td>DIP-40</td><td>32KB</td><td>2KB</td><td>32</td><td class="ok">Default target</td></tr>
+  <tr><td>ATmega88 / 88P</td><td>DIP-28</td><td>8KB</td><td>1KB</td><td>23</td><td>328P-compatible</td></tr>
+  <tr><td>ATmega168 / 168P</td><td>DIP-28</td><td>16KB</td><td>1KB</td><td>23</td><td>328P-compatible</td></tr>
+  <tr><td class="ok">ATmega328P / 328PA</td><td>DIP-28</td><td>32KB</td><td>2KB</td><td>23</td><td class="ok">Arduino Uno chip</td></tr>
+  <tr><td>ATmega644 / 644P</td><td>DIP-40</td><td>64KB</td><td>4KB</td><td>32</td><td>Sanguino compatible</td></tr>
+  <tr><td>ATmega128 / 128A</td><td>DIP-64</td><td>128KB</td><td>4KB</td><td>53</td><td>Large pin count</td></tr>
+  <tr><td>ATmega1280 / 2560</td><td>TQFP-100</td><td>128/256KB</td><td>8KB</td><td>86</td><td>Arduino Mega chip</td></tr>
+  <tr><td>ATtiny13 / 13A</td><td>DIP-8</td><td>1KB</td><td>64B</td><td>6</td><td>Minimal; limited libs</td></tr>
+  <tr><td>ATtiny25 / 45</td><td>DIP-8</td><td>2/4KB</td><td>128/256B</td><td>6</td><td>Tiny85 family</td></tr>
+  <tr><td class="ok">ATtiny85</td><td>DIP-8</td><td>8KB</td><td>512B</td><td>6</td><td class="ok">Popular small chip</td></tr>
+  <tr><td>ATtiny24 / 44 / 84</td><td>DIP-14</td><td>2/4/8KB</td><td>128/256/512B</td><td>12</td><td>More I/O than tiny85</td></tr>
+  <tr><td>ATtiny2313</td><td>DIP-20</td><td>2KB</td><td>128B</td><td>18</td><td>UART-capable tiny</td></tr>
+</table>
 
-    <!-- TIMER ISR -->
-    <div class="code-panel" id="tab-timer">
-        <div class="code-header">
-            <span>timer_isr.c — ATmega8 · 1Hz LED toggle via Timer1 interrupt</span>
-            <button class="copy-btn" onclick="copyCode('tab-timer')">COPY</button>
-        </div>
-        <pre><code><span class="cm">// Toggle PB0 at 1Hz using Timer1 Compare Match interrupt — ATmega8 @ 8MHz</span>
-<span class="kw">#include</span> <span class="st">&lt;avr/io.h&gt;</span>
-<span class="kw">#include</span> <span class="st">&lt;avr/interrupt.h&gt;</span>
+<div class="card info" style="margin-top:12px">
+  <span class="tag-info">[TIP]</span>
+  If avrdude reports a <em>device signature mismatch</em>, the app will auto-detect the real chip and suggest the correct TARGET_MCU setting.
+</div>
+</section>
 
-<span class="cm">// Timer1 CTC interrupt — fires every 500ms → 1Hz toggle</span>
-<span class="nb">ISR</span>(TIMER1_COMPA_vect) {
-    PORTB ^= (<span class="nb">1</span> &lt;&lt; PB0);                  <span class="cm">// Toggle LED</span>
-}
 
-<span class="tp">int</span> <span class="fn">main</span>(<span class="tp">void</span>) {
-    DDRB |= (<span class="nb">1</span> &lt;&lt; PB0);                    <span class="cm">// PB0 output</span>
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<section id="procedures">
+<h2>📖 Procedures</h2>
 
-    <span class="cm">// Timer1 CTC mode, prescaler=256</span>
-    <span class="cm">// OCR1A = (8MHz / (256 * 2Hz)) - 1 = 15624</span>
-    TCCR1B = (<span class="nb">1</span> &lt;&lt; WGM12) | (<span class="nb">1</span> &lt;&lt; CS12);
-    OCR1A  = <span class="nb">15624</span>;
-    TIMSK  = (<span class="nb">1</span> &lt;&lt; OCIE1A);               <span class="cm">// Enable compare interrupt</span>
+<h3>Build &amp; Flash</h3>
+<ol class="steps">
+  <li><div class="step-num">1</div><div class="step-body">Wire Arduino → target chip as shown in <a href="#wiring">Wiring</a>.</div></li>
+  <li><div class="step-num">2</div><div class="step-body">Upload <code>ArduinoISP</code> sketch to the Arduino (do this once; it stays until you overwrite it).</div></li>
+  <li><div class="step-num">3</div><div class="step-body">In the UI set <strong>TARGET_MCU</strong>, <strong>PROGRAMMER = Arduino as ISP</strong>, <strong>FILE_PATH</strong> (no <code>.c</code>), and <strong>SERIAL_PORT</strong>.</div></li>
+  <li><div class="step-num">4</div><div class="step-body">Click <strong>RUN_PROCESS → BUILD &amp; FLASH</strong>. Watch the terminal output for <code>Flash Successful</code>.</div></li>
+</ol>
 
-    <span class="fn">sei</span>();                                  <span class="cm">// Global interrupts ON</span>
+<h3>Generate .HEX only (no chip needed)</h3>
+<ol class="steps">
+  <li><div class="step-num">1</div><div class="step-body">Set <strong>TARGET_MCU</strong> and <strong>FILE_PATH</strong>.</div></li>
+  <li><div class="step-num">2</div><div class="step-body">Change the action dropdown to <strong>GENERATE .HEX</strong>.</div></li>
+  <li><div class="step-num">3</div><div class="step-body">Click <strong>RUN_PROCESS</strong>. The <code>.hex</code> file appears next to your source.</div></li>
+</ol>
 
-    <span class="kw">while</span> (<span class="nb">1</span>) { }                          <span class="cm">// Sleep — ISR does the work</span>
-}</code></pre>
-    </div>
+<h3>Serial Monitor</h3>
+<ol class="steps">
+  <li><div class="step-num">1</div><div class="step-body">Set <strong>SERIAL_PORT</strong> and <strong>BAUD RATE</strong> to match your firmware's <code>UART_BAUD</code>.</div></li>
+  <li><div class="step-num">2</div><div class="step-body">Click <strong>START_MONITOR</strong>. Data from the chip appears in the terminal.</div></li>
+  <li><div class="step-num">3</div><div class="step-body">The monitor auto-stops when you start a flash to free the port, and you must restart it manually after.</div></li>
+</ol>
 
-    <!-- 7-SEG -->
-    <div class="code-panel" id="tab-7seg">
-        <div class="code-header">
-            <span>7seg.c — ATmega8/32 · Count 0–9 on 7-segment display</span>
-            <button class="copy-btn" onclick="copyCode('tab-7seg')">COPY</button>
-        </div>
-        <pre><code><span class="cm">// Drive a common-cathode 7-segment display on PORTD — ATmega8/32</span>
-<span class="cm">// Segments a-g connected to PD0-PD6</span>
-<span class="kw">#include</span> <span class="st">&lt;avr/io.h&gt;</span>
-<span class="kw">#include</span> <span class="st">&lt;util/delay.h&gt;</span>
+<h3>Writing fuses (clock source)</h3>
+<ol class="steps">
+  <li><div class="step-num">1</div><div class="step-body">Select <strong>CLOCK_SRC</strong> (e.g. <em>Internal 8 MHz</em>).</div></li>
+  <li><div class="step-num">2</div><div class="step-body">Click <strong>WRITE_FUSES</strong> (orange button). This sets the correct <code>lfuse</code> for the selected clock.</div></li>
+  <li><div class="step-num">3</div><div class="step-body"><strong>Warning:</strong> incorrect fuses can make the chip appear bricked. Use a slow BITCLOCK (32 or 128) with fresh chips.</div></li>
+</ol>
+</section>
 
-<span class="cm">// Segment encoding: bit0=a, bit1=b, ..., bit6=g</span>
-<span class="kw">const</span> <span class="tp">uint8_t</span> seg7[<span class="nb">10</span>] = {
-    <span class="nb">0x3F</span>, <span class="cm">/* 0: abcdef  */</span>
-    <span class="nb">0x06</span>, <span class="cm">/* 1: bc       */</span>
-    <span class="nb">0x5B</span>, <span class="cm">/* 2: abdeg    */</span>
-    <span class="nb">0x4F</span>, <span class="cm">/* 3: abcdg    */</span>
-    <span class="nb">0x66</span>, <span class="cm">/* 4: bcfg     */</span>
-    <span class="nb">0x6D</span>, <span class="cm">/* 5: acdfg    */</span>
-    <span class="nb">0x7D</span>, <span class="cm">/* 6: acdefg   */</span>
-    <span class="nb">0x07</span>, <span class="cm">/* 7: abc      */</span>
-    <span class="nb">0x7F</span>, <span class="cm">/* 8: abcdefg  */</span>
-    <span class="nb">0x6F</span>  <span class="cm">/* 9: abcdfg   */</span>
-};
 
-<span class="tp">int</span> <span class="fn">main</span>(<span class="tp">void</span>) {
-    DDRD = <span class="nb">0x7F</span>;                            <span class="cm">// PD0–PD6 as outputs</span>
-    <span class="kw">while</span> (<span class="nb">1</span>) {
-        <span class="kw">for</span> (<span class="tp">uint8_t</span> i = <span class="nb">0</span>; i &lt; <span class="nb">10</span>; i++) {
-            PORTD = seg7[i];
-            <span class="fn">_delay_ms</span>(<span class="nb">1000</span>);
-        }
-    }
-}</code></pre>
-    </div>
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<section id="fuses">
+<h2>🔒 Fuse Reference</h2>
+
+<div class="card warn">
+  <span class="tag-warn">[WARNING]</span>
+  Wrong fuse values can lock out your chip. Always double-check values before writing. If you brick a chip, you can recover it with a High-Voltage programmer.
+</div>
+
+<h3>ATmega32A / 32 / 16 — lfuse values</h3>
+<table>
+  <tr><th>Clock Source</th><th>lfuse</th><th>Startup</th><th>Note</th></tr>
+  <tr><td>External crystal (default)</td><td><code>0xCF</code></td><td>16K CK + 64ms</td><td>Factory default</td></tr>
+  <tr><td>Internal 8 MHz</td><td><code>0xE4</code></td><td>6 CK + 64ms</td><td>No crystal needed</td></tr>
+  <tr><td>Internal 4 MHz</td><td><code>0xE2</code></td><td>6 CK + 64ms</td><td></td></tr>
+  <tr><td>Internal 1 MHz</td><td><code>0xE1</code></td><td>6 CK + 64ms</td><td>Lowest power</td></tr>
+  <tr><td>External 16 MHz crystal</td><td><code>0xFF</code></td><td>16K CK + 64ms</td><td>Use with crystal + caps</td></tr>
+</table>
+
+<h3>ATmega328P — lfuse values</h3>
+<table>
+  <tr><th>Clock Source</th><th>lfuse</th><th>Note</th></tr>
+  <tr><td>External crystal (default)</td><td><code>0xFF</code></td><td>With 16 MHz crystal</td></tr>
+  <tr><td>Internal 8 MHz</td><td><code>0xE2</code></td><td>No crystal, 3.3–5V</td></tr>
+  <tr><td>Internal 1 MHz</td><td><code>0x62</code></td><td>8 MHz ÷ 8 prescaler</td></tr>
+</table>
+
+<h3>ATtiny85 — lfuse values</h3>
+<table>
+  <tr><th>Clock Source</th><th>lfuse</th><th>Note</th></tr>
+  <tr><td>Internal 8 MHz (factory)</td><td><code>0xE2</code></td><td>Default, no crystal</td></tr>
+  <tr><td>Internal 1 MHz (factory)</td><td><code>0x62</code></td><td>Default with CKDIV8</td></tr>
+  <tr><td>External crystal</td><td><code>0xFF</code></td><td>With crystal + caps</td></tr>
+</table>
+
+<pre>
+# Manual avrdude fuse write example
+avrdude -c stk500v1 -b 19200 -p m32a -P /dev/ttyACM0 \
+        -U lfuse:w:0xE4:m
+</pre>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<section id="commands">
+<h2>⌨️ Useful Raw Terminal Commands</h2>
+<p>Type these in the <strong>RAW_TERMINAL</strong> box on the main screen.</p>
+
+<h3>Check tools are installed</h3>
+<pre>avr-gcc --version
+avrdude --version
+avr-size --version</pre>
+
+<h3>Verify chip connection (ATmega32A example)</h3>
+<pre>avrdude -c stk500v1 -b 19200 -p m32a -P /dev/ttyACM0</pre>
+
+<h3>Read fuses from chip</h3>
+<pre>avrdude -c stk500v1 -b 19200 -p m32a -P /dev/ttyACM0 \
+        -U lfuse:r:-:h -U hfuse:r:-:h</pre>
+
+<h3>Flash a pre-built hex directly</h3>
+<pre>avrdude -c stk500v1 -b 19200 -p m32a -P /dev/ttyACM0 \
+        -U flash:w:/path/to/firmware.hex:i</pre>
+
+<h3>Compile manually</h3>
+<pre>avr-gcc -mmcu=atmega32a -Os -DF_CPU=8000000UL \
+        -o blink.elf blink.c
+avr-objcopy -O ihex -R .eeprom blink.elf blink.hex</pre>
+
+<h3>Scan for serial ports (Linux)</h3>
+<pre>ls /dev/ttyACM* /dev/ttyUSB*</pre>
+
+<h3>Check chip memory usage</h3>
+<pre>avr-size --format=avr --mcu=atmega32a blink.elf</pre>
+
+<h3>List USB devices (Linux)</h3>
+<pre>lsusb</pre>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<section id="troubleshoot">
+<h2>🔧 Troubleshooting</h2>
+
+<div class="card warn">
+  <h3 style="margin-top:0;color:var(--warn)">avrdude: stk500_recv(): programmer not responding</h3>
+  <ul>
+    <li>Forgot to upload <code>ArduinoISP</code> sketch to the Arduino.</li>
+    <li>Wrong <strong>SERIAL_PORT</strong> selected — click SCAN to refresh.</li>
+    <li>Missing or loose wires — check all 6 connections.</li>
+    <li>No 10µF cap on Arduino RESET → GND (Arduino resets itself on connect).</li>
+    <li>Try a higher <strong>BITCLOCK</strong> value (32 or 128) for new chips on default 1 MHz.</li>
+  </ul>
+</div>
+
+<div class="card warn">
+  <h3 style="margin-top:0;color:var(--warn)">Device signature mismatch / wrong chip</h3>
+  <ul>
+    <li>The UI will auto-detect the real chip and show <code>[AUTO-DETECT]</code> — change TARGET_MCU to match.</li>
+    <li>If using <em>Arduino (Bootloader)</em> programmer, it reads the Arduino's onboard 328P, not your external chip. Switch to <em>Arduino as ISP</em>.</li>
+  </ul>
+</div>
+
+<div class="card warn">
+  <h3 style="margin-top:0;color:var(--warn)">avrdude: error: usbasp: could not find USB device</h3>
+  <ul>
+    <li>Linux: add udev rule — <code>sudo nano /etc/udev/rules.d/99-usbasp.rules</code> → add:<br>
+    <code>SUBSYSTEMS=="usb", ATTRS{idVendor}=="16c0", MODE="0666"</code></li>
+    <li>Reload: <code>sudo udevadm control --reload-rules</code></li>
+  </ul>
+</div>
+
+<div class="card warn">
+  <h3 style="margin-top:0;color:var(--warn)">Cannot connect to backend</h3>
+  <ul>
+    <li>Run <code>python3 terminal.py</code> (Linux/Mac) or <code>python terminal.py</code> (Windows) in the project directory.</li>
+    <li>Make sure <code>flash_avr.py</code> is in the same folder as <code>terminal.py</code>.</li>
+    <li>Check port 8090 is not already in use: <code>ss -tlnp | grep 8090</code></li>
+  </ul>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;color:var(--text)">Chip looks bricked after wrong fuses</h3>
+  <ul>
+    <li>Use BITCLOCK 128 and try connecting again — the chip is usually still alive, just slow.</li>
+    <li>If it used an external crystal clock and you don't have a crystal connected, it will not respond. Connect a crystal to XTAL1/XTAL2 and try again.</li>
+    <li>Last resort: High-Voltage Serial Programmer (HVSP) or Parallel Programmer.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;color:var(--text)">Compilation error: avr-gcc not found</h3>
+  <ul>
+    <li>Install the toolchain (see <a href="#quickstart">Quick Start</a>).</li>
+    <li>On Windows, ensure WinAVR <code>bin/</code> folder is in your <code>PATH</code>.</li>
+    <li>Test in RAW_TERMINAL: <code>avr-gcc --version</code></li>
+  </ul>
+</div>
+
+<div class="card ok">
+  <span class="tag-ok">[QUICK CHECK]</span> &nbsp;
+  Green LED on the Arduino D9 blinks slowly → ISP sketch is running correctly and ready.
+</div>
+</section>
+
 </div><!-- /wrap -->
 
-<footer>
-    <a href="index.html">← Back to Control Plane</a>
-    <a href="https://github.com/BayazidHabibSiddikee" target="_blank">GitHub</a>
-    <a href="https://www.linkedin.com/in/bayazid-habib-siddikee-4262412b3" target="_blank">LinkedIn</a>
-    <br><br>PROTOTYPE v3.1 // AVR COMMAND CENTER // HELP PAGE
+<footer style="border-top:1px solid #1e2030;text-align:center;padding:24px;color:#333;font-size:.65rem">
+  AVR CONTROL PLANE — HELP &amp; DOCS &nbsp;// &nbsp;PROTOTYPE v3.5
+  &nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="index.html" style="color:#555">← BACK TO APP</a>
 </footer>
 
 <script>
-    // Lightbox
-    function openLB(src) {
-        document.getElementById('lb-img').src = src;
-        document.getElementById('lb').classList.add('open');
-    }
-    function closeLB() {
-        document.getElementById('lb').classList.remove('open');
-    }
-    document.addEventListener('keydown', e => { if(e.key==='Escape') closeLB(); });
-
-    // Code tabs
-    function showTab(id, btn) {
-        document.querySelectorAll('.code-panel').forEach(p => p.classList.remove('on'));
-        document.querySelectorAll('.code-tab').forEach(b => b.classList.remove('on'));
-        document.getElementById('tab-' + id).classList.add('on');
-        btn.classList.add('on');
-    }
-
-    // Copy code
-    function copyCode(panelId) {
-        const panel = document.getElementById(panelId);
-        const code  = panel.querySelector('code').innerText;
-        navigator.clipboard.writeText(code).then(() => {
-            const btn = panel.querySelector('.copy-btn');
-            btn.textContent = 'COPIED!';
-            btn.classList.add('copied');
-            setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
-        });
-    }
+// Highlight active nav link on scroll
+const sections = document.querySelectorAll('section[id]');
+const links    = document.querySelectorAll('nav a[href^="#"]');
+window.addEventListener('scroll', () => {
+  let cur = '';
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 80) cur = s.id; });
+  links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + cur));
+});
+// Smooth scroll
+links.forEach(l => l.addEventListener('click', e => {
+  e.preventDefault();
+  const t = document.querySelector(l.getAttribute('href'));
+  if (t) t.scrollIntoView({behavior:'smooth', block:'start'});
+}));
 </script>
 </body>
 </html>

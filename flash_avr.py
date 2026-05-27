@@ -359,4 +359,3 @@ def flash_avr(file_name, board_type="atmega8", port=None, f_cpu=None,
             log += f"  Failed: {last_error}\n\n"
 
     return False, log + f"All programmers failed.\nLast error:\n{last_error}"
-
