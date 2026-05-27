@@ -1,461 +1,394 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AVR Control Plane</title>
     <style>
-        :root {
-            --neon-blue: #00d4ff;
-            --terminal-green: #00ff41;
-            --dark-bg: #0a0b10;
-            --error-red: #ff3131;
-        }
+        :root{--neon-blue:#00d4ff;--terminal-green:#00ff41;--dark-bg:#0a0b10;--error-red:#ff3131}
+        body{background-color:var(--dark-bg);color:white;font-family:'Courier New',Courier,monospace;display:flex;flex-direction:column;align-items:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}
+        h1{color:var(--neon-blue);text-transform:uppercase;letter-spacing:5px;text-shadow:0 0 10px var(--neon-blue);margin-top:40px}
+        .tc{background:rgba(0,0,0,.8);padding:30px;border:1px solid var(--neon-blue);width:90%;max-width:800px;box-shadow:0 0 20px rgba(0,212,255,.2)}
+        .cr{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+        label{color:var(--neon-blue);white-space:nowrap;font-size:0.8rem}
+        select,input[type="text"]{background:#1a1b23;border:1px solid var(--neon-blue);color:white;padding:9px 10px;outline:none;font-family:inherit;font-size:0.8rem}
+        input[type="text"]{flex-grow:1}
+        .eb{background:var(--neon-blue);color:black;border:none;padding:9px 22px;cursor:pointer;font-weight:bold;transition:.3s;font-size:0.8rem}
+        .eb:hover{background:white;box-shadow:0 0 15px var(--neon-blue)}
+        .eb:disabled{background:#333;color:#666;cursor:not-allowed;box-shadow:none}
+        #ow{background:#050505;border-left:3px solid var(--terminal-green);padding:15px;height:240px;overflow-y:auto;font-size:.8rem;color:var(--terminal-green);margin-top:18px;white-space:pre-wrap;word-break:break-all}
+        .le{color:var(--error-red)!important}.ls{color:#00ff41!important;font-weight:bold}.li{color:var(--neon-blue)!important}
+        #sb{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:.65rem;color:#444}
+        #si{display:inline-block;width:8px;height:8px;border-radius:50%;background:#333;margin-right:6px}
+        #si.running{background:var(--neon-blue);box-shadow:0 0 6px var(--neon-blue);animation:pulse 1s infinite}
+        #si.done{background:var(--terminal-green)}#si.error{background:var(--error-red)}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+        .sd{border:none;border-top:1px solid #222;margin:22px 0 12px}
+        .sl{color:#444;font-size:.65rem;text-transform:uppercase;letter-spacing:3px;margin-bottom:8px}
+        .eb2{background:rgba(255,49,49,.1);border:1px solid var(--error-red);color:var(--error-red);padding:10px 14px;margin-bottom:12px;font-size:.75rem;display:none}
+        .eb2.vis{display:block}
+        .pb{display:inline-block;padding:1px 7px;border:1px solid #333;border-radius:3px;font-size:.6rem;color:#555;margin-left:8px;vertical-align:middle}
+        .hint{color:#333;font-size:.6rem;margin-top:1px}
+        footer{margin-top:auto;padding:40px 0;text-align:center;width:100%;border-top:1px solid #222}
+        footer a{color:var(--neon-blue);text-decoration:none;margin:0 15px;font-size:.75rem;transition:.3s}
+        footer a:hover{color:white;text-shadow:0 0 5px var(--neon-blue)}
+        .ticker{width:100%;overflow:hidden;margin-top:18px;color:#444;font-size:.7rem}
+        @keyframes slide{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+        .ti{display:inline-block;white-space:nowrap;animation:slide 25s linear infinite}
+        .pg{background:#1a1b26;border:1px solid #2a2b3a;border-radius:6px;padding:10px;margin-bottom:10px;font-size:.7rem;color:#555;display:none}
+        .pg.vis{display:block}
 
-        body {
-            background-color: var(--dark-bg);
-            color: white;
-            font-family: 'Courier New', Courier, monospace;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        h1 {
-            color: var(--neon-blue);
-            text-transform: uppercase;
-            letter-spacing: 5px;
-            text-shadow: 0 0 10px var(--neon-blue);
-            margin-top: 40px;
-        }
-
-        .terminal-container {
-            background: rgba(0, 0, 0, 0.8);
-            padding: 30px;
-            border: 1px solid var(--neon-blue);
-            width: 90%;
-            max-width: 800px;
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
-        }
-
-        .controls-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        label {
-            color: var(--neon-blue);
-            white-space: nowrap;
-        }
-
-        select,
-        input[type="text"] {
-            background: #1a1b23;
-            border: 1px solid var(--neon-blue);
-            color: white;
-            padding: 10px;
-            outline: none;
-            font-family: inherit;
-        }
-
-        input[type="text"] {
-            flex-grow: 1;
-        }
-
-        .execute-btn {
-            background: var(--neon-blue);
-            color: black;
-            border: none;
-            padding: 10px 25px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-
-        .execute-btn:hover {
-            background: white;
-            box-shadow: 0 0 15px var(--neon-blue);
-        }
-
-        .execute-btn:disabled {
-            background: #333;
-            color: #666;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        #output-window {
-            background: #050505;
-            border-left: 3px solid var(--terminal-green);
-            padding: 15px;
-            height: 220px;
-            overflow-y: auto;
-            font-size: 0.85rem;
-            color: var(--terminal-green);
-            margin-top: 20px;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-
-        .line-error {
-            color: var(--error-red) !important;
-        }
-
-        .line-success {
-            color: #00ff41 !important;
-            font-weight: bold;
-        }
-
-        .line-info {
-            color: var(--neon-blue) !important;
-        }
-
-        #status-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 8px;
-            font-size: 0.7rem;
-            color: #444;
-        }
-
-        #status-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #333;
-            margin-right: 6px;
-        }
-
-        #status-indicator.running {
-            background: var(--neon-blue);
-            box-shadow: 0 0 6px var(--neon-blue);
-            animation: pulse 1s infinite;
-        }
-
-        #status-indicator.done {
-            background: var(--terminal-green);
-        }
-
-        #status-indicator.error {
-            background: var(--error-red);
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1
-            }
-
-            50% {
-                opacity: 0.3
-            }
-        }
-
-        .section-divider {
-            border: none;
-            border-top: 1px solid #222;
-            margin: 25px 0 15px;
-        }
-
-        .section-label {
-            color: #444;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 10px;
-        }
-
-        .error-banner {
-            background: rgba(255, 49, 49, 0.1);
-            border: 1px solid var(--error-red);
-            color: var(--error-red);
-            padding: 12px 16px;
-            margin-bottom: 15px;
-            font-size: 0.8rem;
-            display: none;
-        }
-
-        .error-banner.visible {
-            display: block;
-        }
-
-        .platform-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border: 1px solid #333;
-            border-radius: 3px;
-            font-size: 0.65rem;
-            color: #555;
-            margin-left: 10px;
-            vertical-align: middle;
-        }
-
-        footer {
-            margin-top: auto;
-            padding: 40px 0;
-            text-align: center;
-            width: 100%;
-            border-top: 1px solid #222;
-        }
-
-        footer a {
-            color: var(--neon-blue);
-            text-decoration: none;
-            margin: 0 15px;
-            font-size: 0.8rem;
-            transition: 0.3s;
-        }
-
-        footer a:hover {
-            color: white;
-            text-shadow: 0 0 5px var(--neon-blue);
-        }
-
-        .ticker {
-            width: 100%;
-            overflow: hidden;
-            margin-top: 20px;
-            color: #444;
-            font-size: 0.75rem;
-        }
-
-        @keyframes slide {
-            0% {
-                transform: translateX(100%)
-            }
-
-            100% {
-                transform: translateX(-100%)
-            }
-        }
-
-        .ticker-inner {
-            display: inline-block;
-            white-space: nowrap;
-            animation: slide 25s linear infinite;
-        }
+        /* FIX #7: hide port/programmer row for non-flash actions */
+        .flash-only{transition:opacity .2s}
+        .flash-only.hidden{opacity:.3;pointer-events:none}
     </style>
 </head>
-
 <body>
 
-    <h1>AVR COMMAND CENTER <span id="platform-badge" class="platform-badge"></span></h1>
+<h1>AVR COMMAND CENTER <span id="pb" class="pb"></span></h1>
 
-    <div class="terminal-container">
+<div class="tc">
+    <div id="ce" class="eb2">Cannot connect to backend. Run: <span id="ch" style="color:#ff8888">python3 terminal.py</span></div>
 
-        <div id="conn-error" class="error-banner">
-            ⚠ Cannot connect to backend server. Run:<br>
-            <span id="conn-hint" style="color:#ff8888">python terminal.py</span>
-        </div>
+    <p class="sl">&gt; AVR_TOOLCHAIN</p>
 
-        <p class="section-label">&gt; AVR_TOOLCHAIN</p>
-
-        <div class="controls-row">
-            <label>TARGET_MCU:</label>
-            <select id="board">
-                <option value="atmega8">ATmega8</option>
-                <option value="atmega16">ATmega16</option>
-                <option value="atmega32">ATmega32</option>
-                <option value="atmega328p">ATmega328P</option>
-                <option value="atmega128">ATmega128</option>
-                <option value="attiny85">ATtiny85</option>
-                <option value="attiny84">ATtiny84</option>
-            </select>
-        </div>
-
-        <div class="controls-row">
-            <label>FILE_PATH:</label>
-            <input type="text" id="filename" placeholder="Path without .c  e.g. /home/user/blink  or  C:\avr\blink"
-                required>
-        </div>
-
-        <div class="controls-row">
-            <label>SERIAL_PORT:</label>
-            <input type="text" id="port" placeholder="Auto-detect  (  /dev/ttyUSB0  |  COM3  )">
-        </div>
-
-        <div class="controls-row">
-            <select id="action">
-                <option value="flash">BUILD &amp; FLASH</option>
-                <option value="hex">GENERATE .HEX</option>
-                <option value="elf">GENERATE .ELF</option>
-            </select>
-            <button class="execute-btn" id="avr-btn" onclick="runAVR()">RUN_PROCESS</button>
-        </div>
-
-        <hr class="section-divider">
-
-        <p class="section-label">&gt; RAW_TERMINAL</p>
-        <div class="controls-row">
-            <input type="text" id="raw-cmd" placeholder="Any shell command, e.g. avr-gcc --version"
-                onkeydown="if(event.key==='Enter') runCmd()">
-            <button class="execute-btn" onclick="runCmd()">EXEC</button>
-        </div>
-
-        <div id="output-window">[SYSTEM READY] — Waiting for instruction...</div>
-
-        <div id="status-bar">
-            <span><span id="status-indicator"></span><span id="status-text">IDLE</span></span>
-            <span id="exit-code"></span>
-        </div>
-
-        <div class="ticker">
-            <div class="ticker-inner">
-                &gt; DDRB |= (1 &lt;&lt; PB0); &nbsp;&nbsp;
-                &gt; PORTD=0xFF; &nbsp;&nbsp;
-                &gt; _delay_ms(500); &nbsp;&nbsp;
-                &gt; TCCR1B |=(1 &lt;&lt; CS12); &nbsp;&nbsp;
-                &gt; ADCSRA |=(1 &lt;&lt; ADSC); &nbsp;&nbsp;
-                &gt; sei(); // Global Interrupt Enable
-            </div>
-        </div>
+    <div class="cr">
+        <label>TARGET_MCU:</label>
+        <select id="board">
+            <option value="atmega8">ATmega8</option>
+            <option value="atmega8a">ATmega8A</option>
+            <option value="atmega16">ATmega16</option>
+            <option value="atmega32">ATmega32</option>
+            <option value="atmega32a" selected>ATmega32A</option>
+            <option value="atmega328p">ATmega328P</option>
+            <option value="atmega128">ATmega128</option>
+            <option value="attiny85">ATtiny85</option>
+            <option value="attiny84">ATtiny84</option>
+        </select>
     </div>
 
-    <footer>
-        <a href="https://github.com/BayazidHabibSiddikee" target="_blank">GITHUB</a>
-        <a href="https://www.linkedin.com/in/bayazid-habib-siddikee-4262412b3" target="_blank">LINKEDIN</a>
-        <a href="https://www.youtube.com/@mtemind" target="_blank">YOUTUBE</a>
-        <a href="https://www.facebook.com/share/1bKM9PdJfN/" target="_blank">FACEBOOK</a>
-        <p style="font-size:0.6rem;color:#333;margin-top:10px;">PROTOTYPE v3.1 // CROSS-PLATFORM</p>
-    </footer>
+    <!-- FIX #7: wrapped in flash-only so they dim for hex/elf actions -->
+    <div class="cr flash-only" id="progRow">
+        <label>PROGRAMMER:</label>
+        <select id="programmer" onchange="onProgChange()">
+            <option value="arduino">Arduino (Bootloader — onboard chip)</option>
+            <option value="arduinoisp" selected>Arduino as ISP (Standard — 19200)</option>
+            <option value="arduinoisp_leonardo">Arduino as ISP (Leonardo/Mega)</option>
+            <option value="usbasp">USBasp</option>
+            <option value="usbtiny">USBtinyISP</option>
+            <option value="avrispmkII">AVRISP mkII</option>
+        </select>
+    </div>
 
-    <script>
-        const out = document.getElementById('output-window');
-        const indicator = document.getElementById('status-indicator');
-        const statusText = document.getElementById('status-text');
-        const exitCodeEl = document.getElementById('exit-code');
-        const connError = document.getElementById('conn-error');
-        const platformBadge = document.getElementById('platform-badge');
+    <div class="cr">
+        <label>BITCLOCK (-B):</label>
+        <select id="bitclock">
+            <option value="">Default (Auto)</option>
+            <option value="1">1 (Fastest)</option>
+            <option value="4">4 (Standard)</option>
+            <option value="32">32 (Slow — for 1MHz)</option>
+            <option value="128">128 (Slowest)</option>
+        </select>
+        <span class="hint">Use slow clock if flashing fails on new chips</span>
+    </div>
 
-        // Detect platform from user-agent
-        (function detectPlatform() {
-            const ua = navigator.userAgent;
-            if (ua.includes('Win')) platformBadge.textContent = 'WINDOWS';
-            else if (ua.includes('Linux') && !ua.includes('Android')) platformBadge.textContent = 'LINUX';
-            else if (ua.includes('Mac')) platformBadge.textContent = 'MAC';
-            else if (ua.includes('Android')) platformBadge.textContent = 'TERMUX';
-            else platformBadge.textContent = 'UNKNOWN';
-        })();
+    <div id="ispHint" class="pg vis">
+        Arduino as ISP wiring: Arduino pin 10 → RESET, 11 → MOSI, 12 → MISO, 13 → SCK<br>
+        Make sure ArduinoISP sketch is uploaded to the Arduino first.
+    </div>
 
-        function setStatus(state, msg, code) {
-            indicator.className = state;
-            statusText.textContent = msg;
-            exitCodeEl.textContent = code || '';
+    <div class="cr">
+        <label>CLOCK_SRC:</label>
+        <select id="clock" onchange="onClockChange()">
+            <option value="">External (default)</option>
+            <option value="8000000">Internal 8 MHz</option>
+            <option value="4000000">Internal 4 MHz</option>
+            <option value="1000000">Internal 1 MHz</option>
+            <option value="16000000">External 16 MHz</option>
+            <option value="12000000">External 12 MHz</option>
+            <option value="custom">Custom Hz...</option>
+        </select>
+        <input type="text" id="cf" placeholder="e.g. 8000000" style="display:none;width:130px;">
+        <button class="eb" style="background:#ff8800;padding:5px 10px;font-size:0.65rem;" onclick="runAVR(true)">WRITE_FUSES</button>
+        <button class="eb" style="background:#00d4ff;padding:5px 10px;font-size:0.65rem;margin-left:auto;" onclick="window.open('help.html#wiring','_blank')">WIRING_HELP</button>
+    </div>
+
+    <div class="cr">
+        <label>FILE_PATH:</label>
+        <input type="text" id="filename" placeholder="Path without .c  e.g. /home/user/blink" required>
+        <button class="eb" style="background:#555;padding:5px 10px;font-size:0.65rem;" onclick="window.open('help.html','_blank')">DOCS / CMDs</button>
+    </div>
+
+    <!-- FIX #7: also flash-only -->
+    <div class="cr flash-only" id="portRow">
+        <label>SERIAL_PORT:</label>
+        <input type="text" id="port" list="portList" placeholder="Auto-detect (/dev/ttyACM0 | COM3)">
+        <datalist id="portList"></datalist>
+        <button class="eb" style="padding:5px 10px;font-size:0.65rem;" onclick="refreshPorts()">SCAN</button>
+    </div>
+
+    <div class="cr">
+        <select id="action" onchange="onActionChange()">
+            <option value="flash">BUILD &amp; FLASH</option>
+            <option value="hex">GENERATE .HEX</option>
+            <option value="elf">GENERATE .ELF</option>
+        </select>
+        <button class="eb" id="ab" onclick="runAVR()">RUN_PROCESS</button>
+    </div>
+
+    <hr class="sd">
+
+    <p class="sl">&gt; SERIAL_MONITOR</p>
+    <div class="cr">
+        <select id="baud">
+            <option value="9600">9600 baud</option>
+            <option value="19200">19200 baud</option>
+            <option value="38400">38400 baud</option>
+            <option value="57600">57600 baud</option>
+            <option value="115200" selected>115200 baud</option>
+        </select>
+        <button class="eb" id="sb_btn" onclick="toggleSerial()">START_MONITOR</button>
+        <button class="eb" style="background:#333;" onclick="document.getElementById('ow').textContent=''">CLEAR</button>
+    </div>
+
+    <div id="ow">[SYSTEM READY] — Waiting for instruction...</div>
+    <div id="sb">
+        <span><span id="si"></span><span id="st">IDLE</span></span>
+        <span id="ec"></span>
+    </div>
+
+    <hr class="sd">
+
+    <p class="sl">&gt; RAW_TERMINAL</p>
+    <div class="cr">
+        <input type="text" id="rc" placeholder="Any shell command, e.g. avr-gcc --version" onkeydown="if(event.key==='Enter')runCmd()">
+        <button class="eb" onclick="runCmd()">EXEC</button>
+    </div>
+
+    <div class="ticker">
+        <div class="ti">&gt; DDRB |= (1 &lt;&lt; PB0); &nbsp;&nbsp; &gt; PORTD=0xFF; &nbsp;&nbsp; &gt; _delay_ms(500); &nbsp;&nbsp; &gt; TCCR1B |=(1 &lt;&lt; CS12); &nbsp;&nbsp; &gt; ADCSRA |=(1 &lt;&lt; ADSC); &nbsp;&nbsp; &gt; sei();</div>
+    </div>
+</div>
+
+<footer>
+    <a href="https://github.com/BayazidHabibSiddikee" target="_blank">GITHUB</a>
+    <a href="https://www.linkedin.com/in/bayazid-habib-siddikee-4262412b3" target="_blank">LINKEDIN</a>
+    <a href="https://www.youtube.com/@mtemind" target="_blank">YOUTUBE</a>
+    <a href="https://www.facebook.com/share/1bKM9PdJfN/" target="_blank">FACEBOOK</a>
+    <p style="font-size:.55rem;color:#333;margin-top:10px;">PROTOTYPE v3.5 // CROSS-PLATFORM</p>
+</footer>
+
+<script>
+const out = document.getElementById('ow'),
+      si  = document.getElementById('si'),
+      st  = document.getElementById('st'),
+      ec  = document.getElementById('ec'),
+      ce  = document.getElementById('ce'),
+      pb  = document.getElementById('pb'),
+      ispH = document.getElementById('ispHint');
+
+// FIX #8: track both the polling interval AND whether the backend monitor is running
+let serInt      = null;   // setInterval handle for polling
+let serialActive = false; // true = backend serial monitor is running
+
+(function init() {
+    const u = navigator.userAgent;
+    pb.textContent = u.includes('Win')     ? 'WINDOWS'
+                   : u.includes('Linux') && !u.includes('Android') ? 'LINUX'
+                   : u.includes('Mac')     ? 'MAC'
+                   : u.includes('Android') ? 'TERMUX'
+                   : 'UNKNOWN';
+    refreshPorts();
+})();
+
+async function refreshPorts() {
+    try {
+        const r  = await fetch('/ports');
+        const t  = await r.text();
+        const dl = document.getElementById('portList');
+        dl.innerHTML = '';
+        if (t) {
+            t.split(',').forEach(pv => {
+                const o = document.createElement('option');
+                o.value = pv;
+                dl.appendChild(o);
+            });
+            if (!document.getElementById('port').value)
+                document.getElementById('port').value = t.split(',')[0];
         }
+    } catch (e) {}
+}
 
-        function appendLine(text, cls) {
-            const span = document.createElement('span');
-            if (cls) span.className = cls;
-            span.textContent = text + '\n';
-            out.appendChild(span);
-            out.scrollTop = out.scrollHeight;
-        }
+function SS(s, m, c) { si.className = s; st.textContent = m; ec.textContent = c || ''; }
+function AL(t, c) {
+    const s = document.createElement('span');
+    if (c) s.className = c;
+    s.textContent = t + '\n';
+    out.appendChild(s);
+    out.scrollTop = out.scrollHeight;
+}
+function CO(l) { out.textContent = ''; AL('[' + l + ']', 'li'); }
 
-        function clearOutput(label) {
-            out.textContent = '';
-            appendLine('[' + label + ']', 'line-info');
-        }
+async function HC() {
+    try {
+        const r = await fetch('/ping', { signal: AbortSignal.timeout(2000) });
+        if (r.ok) { ce.classList.remove('vis'); return true; }
+    } catch (e) {}
+    ce.classList.add('vis');
+    const plat = pb.textContent;
+    document.getElementById('ch').textContent = {
+        WINDOWS: 'python terminal.py',
+        LINUX:   'python3 terminal.py',
+        MAC:     'python3 terminal.py',
+        TERMUX:  'python3 terminal.py',
+    }[plat] || 'python3 terminal.py';
+    return false;
+}
+HC();
+setInterval(HC, 10000);
 
-        function showError(msg) {
-            appendLine(msg, 'line-error');
-        }
+function onProgChange() {
+    const v = document.getElementById('programmer').value;
+    ispH.classList.toggle('vis', v.includes('arduinoisp'));
+}
 
-        // Check if server is alive
-        async function healthCheck() {
-            try {
-                const r = await fetch('/ping', { signal: AbortSignal.timeout(2000) });
-                if (r.ok) {
-                    connError.classList.remove('visible');
-                    return true;
-                }
-            } catch (e) { }
-            connError.classList.add('visible');
-            // Set hint based on detected platform
-            const p = platformBadge.textContent;
-            const hints = {
-                'WINDOWS': 'python terminal.py',
-                'LINUX': 'python3 terminal.py',
-                'MAC': 'python3 terminal.py',
-                'TERMUX': 'python3 terminal.py',
-            };
-            document.getElementById('conn-hint').textContent = hints[p] || 'python3 terminal.py';
-            return false;
-        }
+// FIX #7: dim port/programmer rows for non-flash actions
+function onActionChange() {
+    const isFlash = document.getElementById('action').value === 'flash';
+    document.getElementById('progRow').classList.toggle('hidden', !isFlash);
+    document.getElementById('portRow').classList.toggle('hidden', !isFlash);
+}
 
-        // Run on load and every 10s
-        healthCheck();
-        setInterval(healthCheck, 10000);
+function onClockChange() {
+    const s = document.getElementById('clock'),
+          c = document.getElementById('cf');
+    c.style.display = s.value === 'custom' ? 'inline-block' : 'none';
+    if (s.value !== 'custom') c.value = '';
+}
 
-        // ── AVR Toolchain ─────────────────────────────────────────
-        async function runAVR() {
-            const filename = document.getElementById('filename').value.trim();
-            const board = document.getElementById('board').value;
-            const action = document.getElementById('action').value;
-            const port = document.getElementById('port').value.trim();
+function getFC() {
+    const s = document.getElementById('clock');
+    if (s.value === 'custom') {
+        const v = document.getElementById('cf').value.trim();
+        return (v && !isNaN(v)) ? v : '';
+    }
+    return s.value;
+}
 
-            if (!filename) { showError('[ERROR] File path is required.'); return; }
+// FIX #8: stopSerial now returns a Promise and clears both interval and flag
+async function stopSerial() {
+    if (!serialActive) return;
+    clearInterval(serInt);     // FIX #8: clear interval before issuing stop
+    serInt = null;
+    try { await fetch('/serial?action=stop'); } catch (e) {}
+    const btn = document.getElementById('sb_btn');
+    btn.textContent = 'START_MONITOR';
+    btn.style.background = 'var(--neon-blue)';
+    serialActive = false;
+    AL('[SERIAL] Disconnected.', 'li');
+}
 
-            const btn = document.getElementById('avr-btn');
-            btn.disabled = true;
-            clearOutput(action.toUpperCase() + ' // ' + filename + ' // ' + board);
-            setStatus('running', 'RUNNING...');
+async function toggleSerial() {
+    const btn = document.getElementById('sb_btn');
+    const pt  = document.getElementById('port').value.trim();
+    const bd  = document.getElementById('baud').value;
 
-            try {
-                const params = new URLSearchParams({ action, filename, board, port });
-                const res = await fetch('/avr?' + params);
-                const text = await res.text();
-
-                // Parse response — server sends plain text
-                const lines = text.split('\n');
-                lines.forEach(line => {
-                    if (!line.trim()) return;
-                    if (line.includes('Error:') || line.includes('Failed') || line.includes('not found'))
-                        appendLine(line, 'line-error');
-                    else if (line.includes('Success') || line.includes('Flash Successful'))
-                        appendLine(line, 'line-success');
-                    else
-                        appendLine(line);
-                });
-
-                const ok = text.includes('Success') || text.includes('Flash Successful');
-                setStatus(ok ? 'done' : 'error', ok ? 'DONE' : 'FAILED', 'EXIT: ' + (ok ? '0' : '1'));
-            } catch (err) {
-                showError('[NETWORK ERROR] ' + err.message);
-                setStatus('error', 'CONN FAILED');
+    if (!serialActive) {
+        if (!pt) { AL('[ERROR] Select a port first.', 'le'); return; }
+        try {
+            const r = await fetch('/serial?action=start&port=' + pt + '&baud=' + bd);
+            if (r.ok) {
+                btn.textContent = 'STOP_MONITOR';
+                btn.style.background = '#ff3131';
+                AL('[SERIAL] Connected to ' + pt + ' at ' + bd + ' baud.', 'ls');
+                serialActive = true;
+                // FIX #8: clear any stale interval before starting a new one
+                clearInterval(serInt);
+                serInt = setInterval(readSerial, 200);
+            } else {
+                AL(await r.text(), 'le');
             }
-            btn.disabled = false;
-        }
+        } catch (e) { AL('[ERROR] ' + e.message, 'le'); }
+    } else {
+        await stopSerial();
+    }
+}
 
-        // ── Raw Terminal ──────────────────────────────────────────
-        async function runCmd() {
-            const cmd = document.getElementById('raw-cmd').value.trim();
-            if (!cmd) return;
-            clearOutput('CMD: ' + cmd);
-            setStatus('running', 'RUNNING...');
+async function readSerial() {
+    try {
+        const r = await fetch('/serial?action=read');
+        const t = await r.text();
+        if (t) AL(t);
+    } catch (e) {}
+}
 
-            try {
-                const res = await fetch('/run?' + new URLSearchParams({ command: cmd }));
-                const text = await res.text();
-                appendLine(text);
-                setStatus('done', 'DONE');
-            } catch (err) {
-                showError('[NETWORK ERROR] ' + err.message);
-                setStatus('error', 'CONN FAILED');
-            }
-            document.getElementById('raw-cmd').value = '';
-        }
-    </script>
+async function runAVR(fuses = false) {
+    const fn = document.getElementById('filename').value.trim();
+    const bd = document.getElementById('board').value;
+    const pg = document.getElementById('programmer').value;
+    const ac = document.getElementById('action').value;
+    const pt = document.getElementById('port').value.trim();
+    const bc = document.getElementById('bitclock').value;
+    const fc = getFC();
+
+    if (!fn && !fuses) { AL('[ERROR] File path required.', 'le'); return; }
+    if (fuses && !fc) { AL('[ERROR] Select internal clock to set fuses.', 'le'); return; }
+
+    // FIX #3: await stopSerial() so the port is actually freed before flashing
+    if (serialActive) { await stopSerial(); }
+
+    const btn = document.getElementById('ab');
+    btn.disabled = true;
+
+    let lab = (fuses ? 'FUSES' : 'BUILD & FLASH') + ' // ' + bd;
+    if (pg !== 'arduino') lab += ' // ' + pg;
+    if (fc) lab += ' // ' + fc + 'Hz';
+    if (bc) lab += ' // -B ' + bc;
+
+    CO(lab);
+    SS('running', 'RUNNING...');
+    try {
+        const prm = new URLSearchParams({ action: ac, filename: fn, board: bd, port: pt });
+        if (pg)        prm.set('programmer', pg);
+        if (fc)        prm.set('f_cpu', fc);
+        if (bc)        prm.set('bitclock', bc);
+        if (fuses)     prm.set('do_fuses', '1');
+
+        const r = await fetch('/avr?' + prm);
+        const t = await r.text();
+        t.split('\n').forEach(l => {
+            if (!l.trim()) return;
+            if      (l.includes('Error:') || l.includes('Failed') || l.includes('not found')) AL(l, 'le');
+            else if (l.includes('Success') || l.includes('Flash Successful'))                 AL(l, 'ls');
+            else if (l.includes('AUTO-DETECT') || l.includes('FUSE INFO') ||
+                     l.includes('[NOTE]')       || l.includes('[FIX]'))                       AL(l, 'li');
+            else AL(l);
+        });
+        const ok = t.includes('Success') || t.includes('Flash Successful');
+        SS(ok ? 'done' : 'error', ok ? 'DONE' : 'FAILED', 'EXIT: ' + (ok ? '0' : '1'));
+    } catch (e) {
+        AL('[NETWORK ERROR] ' + e.message, 'le');
+        SS('error', 'CONN FAILED');
+    }
+    btn.disabled = false;
+}
+
+async function runCmd() {
+    const c = document.getElementById('rc').value.trim();
+    if (!c) return;
+    CO('CMD: ' + c);
+    SS('running', 'RUNNING...');
+    try {
+        const r = await fetch('/run?' + new URLSearchParams({ command: c }));
+        AL(await r.text());
+        SS('done', 'DONE');
+    } catch (e) {
+        AL('[NETWORK ERROR] ' + e.message, 'le');
+        SS('error', 'CONN FAILED');
+    }
+    document.getElementById('rc').value = '';
+}
+</script>
+
 </body>
-
 </html>

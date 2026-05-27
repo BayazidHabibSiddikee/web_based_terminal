@@ -3,6 +3,9 @@
 # OPTIONAL (for embedded Qt window instead of browser):
 PySide6>=6.5.0
 #
+# REQUIRED for Serial Monitor and Port Detection:
+pyserial>=3.5
+#
 # ── Everything else uses Python stdlib ──
 # http.server, subprocess, shutil, threading,
 # signal, os, sys, platform, urllib.parse

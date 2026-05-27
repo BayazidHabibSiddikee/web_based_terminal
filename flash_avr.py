@@ -1,6 +1,6 @@
 """
 AVR Toolchain — Cross-platform build & flash logic.
-Works on Windows, Linux, macOS, and Android (Termux).
+v3.4 — Added programmer selection, Arduino as ISP support, correct baud rates.
 """
 
 import subprocess
@@ -10,10 +10,7 @@ import shutil
 import platform
 
 
-# ── Platform detection ─────────────────────────────────────────────────────────
-
 def get_platform():
-    """Returns 'windows', 'linux', 'android' (Termux), or 'mac'."""
     if sys.platform.startswith("win"):
         return "windows"
     if "TERMUX_VERSION" in os.environ or os.path.exists("/data/data/com.termux"):
@@ -24,7 +21,6 @@ def get_platform():
 
 
 def default_port():
-    """Guess the most likely serial port for this OS."""
     p = get_platform()
     if p == "windows":
         return "COM3"
@@ -34,16 +30,9 @@ def default_port():
 
 
 def tool(name):
-    """
-    Returns the tool name if found in PATH.
-    On Windows, also checks common WinAVR paths.
-    Raises RuntimeError with install instructions if missing.
-    """
     found = shutil.which(name)
     if found:
         return name
-
-    # Windows: check common WinAVR install locations
     if get_platform() == "windows":
         winavr_paths = [
             os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "WinAVR-20100110", "bin", name + ".exe"),
@@ -53,24 +42,11 @@ def tool(name):
         for wp in winavr_paths:
             if os.path.isfile(wp):
                 return wp
-
     install_hints = {
-        "linux": (
-            f"  Ubuntu/Debian: sudo apt install avr-gcc avr-libc avrdude\n"
-            f"  Fedora:        sudo dnf install avr-gcc avr-libc avrdude\n"
-            f"  Arch:          sudo pacman -S avr-gcc avr-libc avrdude"
-        ),
-        "mac": (
-            f"  brew install avr-gcc avrdude"
-        ),
-        "windows": (
-            f"  Option 1: Install WinAVR from winavr.sourceforge.net\n"
-            f"  Option 2: scoop install avr-gcc avrdude\n"
-            f"  Option 3: choco install avr-gcc avrdude"
-        ),
-        "android": (
-            f"  pkg install avr-toolchain avrdude"
-        ),
+        "linux": "  Ubuntu/Debian: sudo apt install avr-gcc avr-libc avrdude\n  Fedora:        sudo dnf install avr-gcc avr-libc avrdude\n  Arch:          sudo pacman -S avr-gcc avr-libc avrdude",
+        "mac":   "  brew install avr-gcc avrdude",
+        "windows": "  Option 1: WinAVR from winavr.sourceforge.net\n  Option 2: scoop install avr-gcc avrdude\n  Option 3: choco install avr-gcc avrdude",
+        "android": "  pkg install avr-toolchain avrdude",
     }
     hint = install_hints.get(get_platform(), "  Check your package manager.")
     raise RuntimeError(f"'{name}' not found in PATH.\n{hint}")
@@ -109,37 +85,122 @@ BOARD_MAP = {
     "attiny13a":   {"mcu": "attiny13a",   "avrdude": "t13a"},
 }
 
-PROGRAMMERS = ["arduino", "stk500v1", "avrisp", "usbasp"]
+# Fuse hints for internal oscillator
+FUSE_HINTS = {
+    "atmega8":    {"8MHz": "lfuse=0xE4", "4MHz": "lfuse=0xE2", "1MHz": "lfuse=0xE1"},
+    "atmega16":   {"8MHz": "lfuse=0xE4", "4MHz": "lfuse=0xE2", "1MHz": "lfuse=0xE1"},
+    "atmega32":   {"8MHz": "lfuse=0xE4", "4MHz": "lfuse=0xE2", "1MHz": "lfuse=0xE1"},
+    "atmega32a":  {"8MHz": "lfuse=0xE4", "4MHz": "lfuse=0xE2", "1MHz": "lfuse=0xE1"},
+    "atmega328p": {"8MHz": "lfuse=0xE2", "4MHz": "lfuse=0xE2", "1MHz": "lfuse=0x62"},
+    "atmega168":  {"8MHz": "lfuse=0xE2", "4MHz": "lfuse=0xE2", "1MHz": "lfuse=0x62"},
+    "attiny85":   {"8MHz": "lfuse=0xE2", "4MHz": "lfuse=0xE2", "1MHz": "lfuse=0x62"},
+    "attiny84":   {"8MHz": "lfuse=0xE2", "4MHz": "lfuse=0xE2", "1MHz": "lfuse=0x62"},
+}
 
+# ── Programmer definitions with correct baud rates ────────────────────────────
+# Each programmer has its own baud rate and protocol
 
-# ── Path resolution ────────────────────────────────────────────────────────────
+PROGRAMMERS = {
+    "arduino": {
+        "id": "arduino",
+        "baud": "115200",
+        "desc": "Arduino Uno/Nano (Bootloader — talks to onboard chip)",
+        "needs_port": True,
+    },
+    "arduinoisp": {
+        "id": "stk500v1",
+        "baud": "19200",
+        "desc": "Arduino as ISP (Standard — 19200 baud)",
+        "needs_port": True,
+    },
+    "arduinoisp_leonardo": {
+        "id": "arduinoisp",
+        "baud": "19200",
+        "desc": "Arduino as ISP (Leonardo/Micro/Mega)",
+        "needs_port": True,
+    },
+    "usbasp": {
+        "id": "usbasp",
+        "baud": None,
+        "desc": "USBasp (USB device)",
+        "needs_port": False,
+    },
+    "usbtiny": {
+        "id": "usbtiny",
+        "baud": None,
+        "desc": "USBtinyISP (USB device)",
+        "needs_port": False,
+    },
+    "avrispmkII": {
+        "id": "avrispmkII",
+        "baud": None,
+        "desc": "AVRISP mkII",
+        "needs_port": True,
+    },
+}
+
 
 def _resolve_paths(file_name):
-    """
-    Accept:
-      - bare name:        'blink'          → CWD
-      - relative path:    'projects/blink' → CWD/projects
-      - absolute path:    '/home/u/blink'  → as-is
-      - Windows path:     'C:\\avr\\blink' → as-is
-    Strips .c extension if included.
-    Returns (work_dir, base_name)
-    """
     file_name = file_name.strip().replace("\\", "/")
     if file_name.endswith(".c"):
         file_name = file_name[:-2]
-
     if os.path.isabs(file_name):
         abs_path = file_name
     else:
         abs_path = os.path.abspath(file_name)
-
     return os.path.dirname(abs_path), os.path.basename(abs_path)
+
+
+def _fcpu_label(f_cpu):
+    if not f_cpu:
+        return "External (default)"
+    mhz = int(f_cpu) / 1000000
+    if mhz < 1:
+        return f"{int(mhz * 1000)} KHz"
+    return f"Internal {int(mhz)} MHz" if mhz <= 8 else f"External {int(mhz)} MHz"
+
+
+def _fuse_hint(board_type, f_cpu):
+    if not f_cpu:
+        return None
+    mhz = int(f_cpu) / 1000000
+    hints = FUSE_HINTS.get(board_type, {})
+    for freq_str in ["8MHz", "4MHz", "1MHz"]:
+        if abs(mhz - int(freq_str.replace("MHz", ""))) < 0.1:
+            fuse = hints.get(freq_str)
+            if fuse:
+                return fuse
+    return None
+
+
+def list_ports():
+    """Returns a list of potential serial ports."""
+    plat = get_platform()
+    ports = []
+    try:
+        if plat == "windows":
+            import serial.tools.list_ports
+            ports = [p.device for p in serial.tools.list_ports.comports()]
+        elif plat == "android":
+            if os.path.exists("/dev/ttyUSB0"): ports.append("/dev/ttyUSB0")
+            if os.path.exists("/dev/ttyUSB1"): ports.append("/dev/ttyUSB1")
+        else:
+            import glob
+            ports = glob.glob("/dev/ttyUSB*") + glob.glob("/dev/ttyACM*")
+            if not ports and plat == "mac":
+                ports = glob.glob("/dev/tty.usb*")
+    except ImportError:
+        # Fallback if pyserial is not installed
+        if plat == "windows":
+            ports = ["COM1", "COM2", "COM3", "COM4"]
+    except Exception:
+        pass
+    return ports
 
 
 # ── Core functions ─────────────────────────────────────────────────────────────
 
-def generate_elf(file_name, board_type="atmega8"):
-    """Compile .c → .elf. Returns (success, output_string)."""
+def generate_elf(file_name, board_type="atmega8", f_cpu=None):
     work_dir, base = _resolve_paths(file_name)
     specs = BOARD_MAP.get(board_type, BOARD_MAP["atmega8"])
     c_file  = os.path.join(work_dir, base + ".c")
@@ -148,25 +209,25 @@ def generate_elf(file_name, board_type="atmega8"):
     if not os.path.exists(c_file):
         return False, f"Error: Source file not found:\n  {c_file}"
 
+    cmd = [tool("avr-gcc"), f"-mmcu={specs['mcu']}", "-Os", "-Wall"]
+    if f_cpu:
+        cmd.append(f"-DF_CPU={f_cpu}UL")
+    cmd.extend(["-o", elf_file, c_file])
+
     log = [
         f"Platform : {get_platform()}",
         f"Compiling: {c_file}",
         f"MCU      : {specs['mcu']}",
-        f"Command  : avr-gcc -mmcu={specs['mcu']} -Os -o {elf_file} {c_file}",
+        f"Clock    : {_fcpu_label(f_cpu)}",
+        f"Command  : {' '.join(cmd)}",
         ""
     ]
 
     try:
-        gcc = tool("avr-gcc")
-        r = subprocess.run(
-            [gcc, f"-mmcu={specs['mcu']}", "-Os", "-Wall", "-o", elf_file, c_file],
-            capture_output=True, text=True,
-            cwd=work_dir
-        )
+        r = subprocess.run(cmd, capture_output=True, text=True, cwd=work_dir)
         if r.returncode == 0:
             if r.stdout:
                 log.append(r.stdout)
-            # Show size info
             size_tool = shutil.which("avr-size")
             if size_tool:
                 sr = subprocess.run([size_tool, elf_file], capture_output=True, text=True, cwd=work_dir)
@@ -187,11 +248,9 @@ def generate_elf(file_name, board_type="atmega8"):
         return False, f"Unexpected error: {e}"
 
 
-def generate_hex(file_name, board_type="atmega8"):
-    """Compile .c → .elf → .hex. Returns (success, output_string)."""
+def generate_hex(file_name, board_type="atmega8", f_cpu=None):
     work_dir, base = _resolve_paths(file_name)
-
-    ok, log = generate_elf(file_name, board_type)
+    ok, log = generate_elf(file_name, board_type, f_cpu)
     if not ok:
         return False, log
 
@@ -202,8 +261,7 @@ def generate_hex(file_name, board_type="atmega8"):
         objcopy = tool("avr-objcopy")
         r = subprocess.run(
             [objcopy, "-O", "ihex", "-R", ".eeprom", elf_file, hex_file],
-            capture_output=True, text=True,
-            cwd=work_dir
+            capture_output=True, text=True, cwd=work_dir
         )
         if r.returncode == 0:
             log += f"\nSuccess: {hex_file} created."
@@ -214,55 +272,91 @@ def generate_hex(file_name, board_type="atmega8"):
         return False, log + "\n" + str(e)
 
 
-def flash_avr(file_name, board_type="atmega8", port=None):
-    """Full pipeline: compile → hex → flash. Returns (success, output_string)."""
+def flash_avr(file_name, board_type="atmega8", port=None, f_cpu=None,
+              programmer_key=None, bitclock=None, do_fuses=False):
+    """
+    Full pipeline: compile -> hex -> flash.
+    programmer_key: key from PROGRAMMERS dict
+    bitclock: -B parameter for avrdude (e.g. '32' or '4')
+    do_fuses: if True, ONLY write fuses based on f_cpu hint
+    """
     if not port or not port.strip():
         port = default_port()
 
     work_dir, base = _resolve_paths(file_name)
+    specs = BOARD_MAP.get(board_type, BOARD_MAP["atmega8"])
 
-    ok, log = generate_hex(file_name, board_type)
-    if not ok:
-        return False, log
+    log = ""
+    if not do_fuses:
+        ok, log = generate_hex(file_name, board_type, f_cpu)
+        if not ok:
+            return False, log
+        hex_file = os.path.join(work_dir, base + ".hex")
+    else:
+        log = f"FUSE WRITE MODE\nChip: {specs['mcu']}\n"
 
-    hex_file = os.path.join(work_dir, base + ".hex")
-    specs    = BOARD_MAP.get(board_type, BOARD_MAP["atmega8"])
+    # Determine which programmers to try
+    if programmer_key and programmer_key in PROGRAMMERS:
+        prog_list = [programmer_key]
+    else:
+        prog_list = ["arduino", "arduinoisp"]
 
-    log += f"\n{'='*40}"
-    log += f"\nFlashing to {port} (chip: {specs['avrdude']})..."
-    log += f"\n{'='*40}\n"
+    log += f"\n{'='*48}\n"
+    if not do_fuses:
+        log += f"Flashing: {os.path.basename(hex_file)}\n"
+    log += f"Chip    : {specs['mcu']} ({specs['avrdude']})\n"
+    log += f"Port    : {port}\n"
+    if bitclock:
+        log += f"Bitclock: {bitclock} (-B)\n"
+    log += f"{'='*48}\n"
+
+    # Fuse logic
+    fuse = _fuse_hint(board_type, f_cpu)
+    if do_fuses and not fuse:
+        return False, log + "[ERROR] No fuse hint found for this chip/clock combination."
 
     last_error = ""
-    for prog in PROGRAMMERS:
+    for pk in prog_list:
+        prog = PROGRAMMERS[pk]
         try:
             dude = tool("avrdude")
-            cmd = [
-                dude,
-                "-c", prog,
-                "-p", specs["avrdude"],
-                "-P", port,
-                "-b", "115200",
-                "-U", f"flash:w:{hex_file}:i"
-            ]
-            log.append(f"Trying programmer: {prog}")
-            log.append(f"  {' '.join(cmd)}\n")
+            cmd = [dude, "-c", prog["id"], "-p", specs["avrdude"]]
 
-            r = subprocess.run(
-                cmd, capture_output=True, text=True,
-                cwd=work_dir, timeout=60
-            )
+            if prog["needs_port"]:
+                cmd.extend(["-P", port])
+                if prog["baud"]:
+                    cmd.extend(["-b", prog["baud"]])
+
+            if bitclock:
+                cmd.extend(["-B", str(bitclock)])
+
+            if do_fuses:
+                # Set fuses
+                cmd.extend(["-U", f"{fuse}:m"])
+            else:
+                # Flash program
+                cmd.extend(["-U", f"flash:w:{hex_file}:i"])
+
+            log += f"[{pk}] {prog['desc']}\n"
+            log += f"  {' '.join(cmd)}\n\n"
+
+            r = subprocess.run(cmd, capture_output=True, text=True, cwd=work_dir, timeout=60)
+
             if r.returncode == 0:
-                log += f"\n{'='*40}"
-                log += f"\nFlash Successful! (programmer: {prog})"
-                log += f"\n{'='*40}"
+                log += f"{'='*48}\n"
+                log += f"{'Fuse Write' if do_fuses else 'Flash'} Successful!\n"
+                log += f"{'='*48}"
                 return True, log
             else:
                 last_error = r.stderr or r.stdout or "(no output)"
-                log.append(f"  Failed with {prog}: {last_error[:200]}\n")
+                if len(last_error) > 500:
+                    last_error = last_error[:500] + "\n  ... (truncated)"
+                log += f"  Failed: {last_error}\n\n"
         except RuntimeError as e:
             return False, log + "\n" + str(e)
         except subprocess.TimeoutExpired:
-            last_error = "Timeout (60s) — check your serial connection"
-            log.append(f"  Failed with {prog}: {last_error}\n")
+            last_error = "Timeout (60s) — check serial connection"
+            log += f"  Failed: {last_error}\n\n"
 
-    return False, log + f"\nAll programmers failed.\nLast error:\n{last_error}"
+    return False, log + f"All programmers failed.\nLast error:\n{last_error}"
+

@@ -19,13 +19,13 @@ A lightweight web interface for compiling and flashing AVR microcontrollers with
 - **Compile** `.c` files to `.elf` or `.hex` using `avr-gcc`.
 - **Flash** directly to AVR chips via `avrdude`.
 - **Run any shell command** through a raw terminal.
-- **Support for 27+ AVR chips** (ATmega, ATtiny series).
+- **Support for 28+ AVR chips** (ATmega, ATtiny series).
 - **Auto-detects** your platform and serial port.
 
 ---
 
 ## 🧠 Why This Exists
-Traditional AVR development usually requires juggling multiple terminals, remembering complex `avr-gcc` flags, and fighting with `avrdude` parameters. 
+Traditional AVR development usually requires juggling multiple terminals, remembering complex `avr-gcc` flags, and fighting with `avrdude` parameters.
 
 This tool puts **everything into one screen** — a clean, cyberpunk-themed web terminal that talks to a lightweight Python backend. No Electron, no heavy IDE, no 500MB download.
 
@@ -41,7 +41,7 @@ Pick your platform and run the corresponding script to install `avr-gcc`, `avr-l
 | **Fedora / RHEL** | `chmod +x install-dnf.sh && ./install-dnf.sh` |
 | **Ubuntu / Debian** | `chmod +x install-apt.sh && ./install-apt.sh` |
 | **Arch Linux** | `chmod +x install-pacman.sh && ./install-pacman.sh` |
-| **Windows** | Double-click `install.bat` |
+| **Windows** | Double-click `install-windows.bat` |
 | **Android (Termux)** | `chmod +x install-termux.sh && ./install-termux.sh` |
 
 ### 2. Launch
@@ -51,7 +51,18 @@ python3 terminal.py
 
 # Windows
 python terminal.py
-A browser window opens automatically at http://localhost:8090.(Note: Termux users should open 127.0.0.1:8090 manually).📁 Project StructurePlaintextavr-control-plane/
+```
+
+A browser window opens automatically at `http://localhost:8090`.
+
+> **Termux users:** open `http://127.0.0.1:8090` manually.
+
+---
+
+## 📁 Project Structure
+
+```
+avr-control-plane/
 ├── index.html           # Frontend — web terminal UI
 ├── terminal.py          # Backend — HTTP server + browser launcher
 ├── flash_avr.py         # Core — compile, hex generation, flashing
@@ -60,6 +71,71 @@ A browser window opens automatically at http://localhost:8090.(Note: Termux user
 ├── install-dnf.sh       # Installer for Fedora / RHEL
 ├── install-pacman.sh    # Installer for Arch Linux
 ├── install-termux.sh    # Installer for Android (Termux)
-├── install.bat          # Installer for Windows
+├── install-windows.bat  # Installer for Windows
 └── README.md            # You are here
-🛰️ Supported MicrocontrollersSeriesChipavr-gcc MCUavrdude IDATmegaATmega328Patmega328pm328pATmegaATmega2560atmega2560m2560ATmegaATmega8atmega8m8ATtinyATtiny85attiny85t85ATtinyATtiny13Aattiny13t13Missing a chip? Simply add it to the BOARD_MAP dictionary in flash_avr.py.✨ Features🌐 Web TerminalColor-coded output: Green (Success), Red (Error), Cyan (Info).Live Status: Pulse animations for active processes.Security: Blocks dangerous commands (e.g., rm -rf /, shutdown).⚙️ BackendMulti-threaded: Slow flashing processes won't block the server.KISS Architecture: Uses Python's built-in http.server—no heavy API frameworks.Auto-Programmer Detection: Tries arduino, usbasp, avrisp, etc.🔧 Troubleshooting"avr-gcc not found": Run the install script for your platform."All programmers failed": Check your USB-TTL connection and verify the port name.Termux: Android DNS quirks mean you must use 127.0.0.1 instead of localhost.PySide6: Optional. If not installed, it defaults to your system browser.🛡️ SecurityThe server binds to 0.0.0.0:8090 (accessible on your local network).Commands have a 30-second timeout (60s for avrdude).Warning: Do not expose this to the public internet.📝 Tech StackFrontend: HTML, CSS, Vanilla JSBackend: Python 3.x (Standard Library)GUI: Optional PySide6 / Qt WebEngineTools: avr-gcc, avr-libc, avrdude📄 LicenseMIT License — Built with 🛠️ by Bayazid Habib Siddikee
+```
+
+---
+
+## 🛰️ Supported Microcontrollers
+
+| Series | Chip | avr-gcc MCU | avrdude ID |
+|--------|------|-------------|------------|
+| ATmega | ATmega328P | atmega328p | m328p |
+| ATmega | ATmega2560 | atmega2560 | m2560 |
+| ATmega | ATmega8 | atmega8 | m8 |
+| ATmega | ATmega16 | atmega16 | m16 |
+| ATmega | ATmega32 | atmega32 | m32 |
+| ATtiny | ATtiny85 | attiny85 | t85 |
+| ATtiny | ATtiny84 | attiny84 | t84 |
+| ATtiny | ATtiny13A | attiny13a | t13a |
+
+> Missing a chip? Add it to the `BOARD_MAP` dictionary in `flash_avr.py`.
+
+---
+
+## ✨ Features
+
+### 🌐 Web Terminal
+- Color-coded output: Green (Success), Red (Error), Cyan (Info).
+- Live Status: Pulse animations for active processes.
+- Security: Blocks dangerous commands (e.g., `rm -rf /`, `shutdown`).
+
+### ⚙️ Backend
+- **Multi-threaded:** Slow flashing processes won't block the server.
+- **KISS Architecture:** Uses Python's built-in `http.server` — no heavy API frameworks.
+- **Auto-Programmer Detection:** Tries `arduino`, `usbasp`, `avrisp`, etc.
+
+---
+
+## 🔧 Troubleshooting
+
+- **"avr-gcc not found":** Run the install script for your platform.
+- **"All programmers failed":** Check your USB-TTL connection and verify the port name.
+- **Termux:** Android DNS quirks mean you must use `127.0.0.1` instead of `localhost`.
+- **PySide6:** Optional. If not installed, it defaults to your system browser.
+
+---
+
+## 🛡️ Security
+
+- The server binds to `0.0.0.0:8090` (accessible on your local network).
+- Commands have a 30-second timeout (60s for avrdude).
+- **Warning:** Do not expose this to the public internet.
+
+---
+
+## 📝 Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | HTML, CSS, Vanilla JS |
+| Backend | Python 3.x (Standard Library) |
+| GUI | Optional PySide6 / Qt WebEngine |
+| Tools | avr-gcc, avr-libc, avrdude |
+
+---
+
+## 📄 License
+
+MIT License — Built with 🛠️ by Bayazid Habib Siddikee
